@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' — Workbook Manager'">Workbook Manager</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="header-inner">
+        <a th:href="@{/workbooks}" class="logo">
+            <span class="logo-icon">📋</span>
+            <span>Workbook Manager</span>
+        </a>
+        <nav>
+            <a th:href="@{/workbooks}" class="nav-link">← Retour à la liste</a>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+
+    <div class="page-header">
+        <h1 th:text="${pageTitle}">Formulaire Workbook</h1>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <div class="card form-card">
+        <form th:action="${workbook.id != null ? '/workbooks/' + workbook.id + '/edit' : '/workbooks'}"
+              th:object="${workbook}"
+              method="post">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label for="firstName">Prénom <span class="required">*</span></label>
+                    <input type="text" id="firstName" th:field="*{firstName}"
+                           class="form-control" th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid'"
+                           placeholder="Prénom">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}"
+                         th:errors="*{firstName}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName">Nom <span class="required">*</span></label>
+                    <input type="text" id="lastName" th:field="*{lastName}"
+                           class="form-control" th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid'"
+                           placeholder="Nom de famille">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}"
+                         th:errors="*{lastName}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="birthdate">Date de naissance <span class="required">*</span></label>
+                    <input type="date" id="birthdate" th:field="*{birthdate}"
+                           class="form-control" th:classappend="${#fields.hasErrors('birthdate')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('birthdate')}"
+                         th:errors="*{birthdate}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="passportNumber">N° Passeport <span class="required">*</span></label>
+                    <input type="text" id="passportNumber" th:field="*{passportNumber}"
+                           class="form-control" th:classappend="${#fields.hasErrors('passportNumber')} ? 'is-invalid'"
+                           placeholder="Ex: AB123456">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('passportNumber')}"
+                         th:errors="*{passportNumber}"></div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="email">Email <span class="required">*</span></label>
+                    <input type="email" id="email" th:field="*{email}"
+                           class="form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                           placeholder="email@exemple.com">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}"
+                         th:errors="*{email}"></div>
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <a th:href="${workbook.id != null ? '/workbooks/' + workbook.id : '/workbooks'}"
+                   class="btn btn-outline">Annuler</a>
+                <button type="submit" class="btn btn-primary"
+                        th:text="${workbook.id != null ? 'Enregistrer' : 'Créer'}">Créer</button>
+            </div>
+
+        </form>
+    </div>
+
+</main>
+</body>
+</html>

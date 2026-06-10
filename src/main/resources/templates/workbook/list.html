@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workbook Manager — Liste</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="header-inner">
+        <a th:href="@{/workbooks}" class="logo">
+            <span class="logo-icon">📋</span>
+            <span>Workbook Manager</span>
+        </a>
+        <nav>
+            <a th:href="@{/workbooks/new}" class="btn btn-sm btn-primary">+ Nouveau Workbook</a>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <div class="page-header">
+        <h1>Workbooks</h1>
+        <span class="badge" th:text="${workbooks.size()} + ' entrée(s)'"></span>
+    </div>
+
+    <div th:if="${workbooks.isEmpty()}" class="empty-state">
+        <div class="empty-icon">📂</div>
+        <h3>Aucun workbook</h3>
+        <p>Commencez par créer un nouveau workbook.</p>
+        <a th:href="@{/workbooks/new}" class="btn btn-primary">+ Créer un Workbook</a>
+    </div>
+
+    <div th:unless="${workbooks.isEmpty()}" class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nom</th>
+                    <th>Âge</th>
+                    <th>Email</th>
+                    <th>N° Passeport</th>
+                    <th>Postes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="wb, stat : ${workbooks}">
+                    <td class="muted" th:text="${stat.index + 1}">1</td>
+                    <td>
+                        <a th:href="@{/workbooks/{id}(id=${wb.id})}"
+                           class="link-name"
+                           th:text="${wb.fullName}">Prénom Nom</a>
+                    </td>
+                    <td th:text="${wb.age != null ? wb.age + ' ans' : '—'}">30 ans</td>
+                    <td th:text="${wb.email}">email@exemple.com</td>
+                    <td class="mono" th:text="${wb.passportNumber}">AB123456</td>
+                    <td>
+                        <span class="badge"
+                              th:text="${wb.workplaces.size()} + ' poste(s)'">0 poste(s)</span>
+                    </td>
+                    <td class="actions">
+                        <a th:href="@{/workbooks/{id}(id=${wb.id})}" class="btn btn-sm btn-outline">Voir</a>
+                        <a th:href="@{/workbooks/{id}/edit(id=${wb.id})}" class="btn btn-sm btn-secondary">Modifier</a>
+                        <form th:action="@{/workbooks/{id}/delete(id=${wb.id})}" method="post"
+                              onsubmit="return confirm('Supprimer ce workbook ?')">
+                            <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</main>
+</body>
+</html>
