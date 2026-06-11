@@ -30,7 +30,7 @@ public class WorkBookService {
     public Workbook findById(Long id) {
         return workbookRepository.findById(id)
                 // Lance une exception si aucun workbook n'est trouvé avec cet id
-                .orElseThrow(() -> new EntityNotFoundException("Workbook introuvable avec l'id : " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Workbook introuvable avec "));
     }
 
     // Crée et enregistre un nouveau workbook en base
@@ -63,7 +63,7 @@ public class WorkBookService {
     public void deleteById(Long id) {
         // Vérifie que le workbook existe avant de tenter la suppression
         if (!workbookRepository.existsById(id)) {
-            throw new EntityNotFoundException("Workbook introuvable avec l'id : " + id);
+            throw new EntityNotFoundException("Workbook introuvable " );
         }
         workbookRepository.deleteById(id);
     }

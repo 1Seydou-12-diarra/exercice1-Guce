@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modifier le poste — Workbook Manager</title>
+    <title>Update the workplace — Workbook Manager</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -25,8 +25,8 @@
 <main class="main-content">
 
     <div class="page-header">
-        <h1>Modifier le poste</h1>
-        <p class="muted" th:text="'Pour : ' + ${workbook.fullName}">Pour :</p>
+        <h1>Update </h1>
+        <p class="muted" th:text="'For : ' + ${workbook.fullName}">For :</p>
     </div>
 
     <div class="card form-card">
@@ -37,7 +37,7 @@
             <div class="form-grid">
 
                 <div class="form-group">
-                    <label for="companyCode">Code entreprise <span class="required">*</span></label>
+                    <label for="companyCode">Company Code <span class="required">*</span></label>
                     <input type="text" id="companyCode" th:field="*{companyCode}"
                            class="form-control" th:classappend="${#fields.hasErrors('companyCode')} ? 'is-invalid'"
                            placeholder="Ex: ACME">
@@ -45,7 +45,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="companyName">Nom de l'entreprise <span class="required">*</span></label>
+                    <label for="companyName">Company Name <span class="required">*</span></label>
                     <input type="text" id="companyName" th:field="*{companyName}"
                            class="form-control" th:classappend="${#fields.hasErrors('companyName')} ? 'is-invalid'"
                            placeholder="Nom complet">
@@ -53,7 +53,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="countryCode">Code pays <span class="required">*</span></label>
+                    <label for="countryCode">Country Code <span class="required">*</span></label>
                     <input type="text" id="countryCode" th:field="*{countryCode}"
                            class="form-control" th:classappend="${#fields.hasErrors('countryCode')} ? 'is-invalid'"
                            placeholder="Ex: FR">
@@ -61,7 +61,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="countryName">Pays <span class="required">*</span></label>
+                    <label for="countryName">Country Name <span class="required">*</span></label>
                     <input type="text" id="countryName" th:field="*{countryName}"
                            class="form-control" th:classappend="${#fields.hasErrors('countryName')} ? 'is-invalid'"
                            placeholder="Ex: France">
@@ -69,30 +69,30 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="startDate">Date de début <span class="required">*</span></label>
+                    <label for="startDate">Start Date <span class="required">*</span></label>
                     <input type="date" id="startDate" th:field="*{startDate}"
                            class="form-control" th:classappend="${#fields.hasErrors('startDate')} ? 'is-invalid'">
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></div>
                 </div>
 
                 <div class="form-group">
-                    <label for="endDate">Date de fin</label>
+                    <label for="endDate">End Date</label>
                     <input type="date" id="endDate" th:field="*{endDate}" class="form-control">
-                    <small class="form-hint">Laisser vide si poste actuel</small>
+                    <small class="form-hint">workplace current</small>
                 </div>
 
                 <div class="form-group form-group-full">
                     <label class="checkbox-label">
                         <input type="checkbox" th:field="*{current}">
-                        <span>Poste actuel</span>
+                        <span>Workplace current</span>
                     </label>
                 </div>
 
             </div>
 
             <div class="form-actions">
-                <a th:href="@{/workbooks/{id}(id=${workbook.id})}" class="btn btn-outline">Annuler</a>
-                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <a th:href="@{/workbooks/{id}(id=${workbook.id})}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save</button>
             </div>
 
         </form>

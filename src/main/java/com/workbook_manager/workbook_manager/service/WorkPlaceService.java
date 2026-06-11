@@ -4,6 +4,7 @@ import com.workbook_manager.workbook_manager.entite.Workbook;
 import com.workbook_manager.workbook_manager.entite.Workplace;
 import com.workbook_manager.workbook_manager.repository.WorkBookRepository;
 import com.workbook_manager.workbook_manager.repository.WorkPlaceRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,11 +17,10 @@ import java.util.List;
 @Transactional
 public class WorkPlaceService {
 
-    // Injection du repository pour accéder aux données des postes de travail
     private final WorkPlaceRepository workplaceRepository;
-
-    // Injection du repository pour accéder aux données des workbooks
     private final WorkBookRepository workbookRepository;
+    // EntityManager nécessaire pour vider le cache Hibernate après les requêtes JPQL natives
+    private final EntityManager entityManager;
 
     // Lecture seule : retourne tous les postes d'un workbook triés par rang croissant
     @Transactional(readOnly = true)
@@ -32,35 +32,32 @@ public class WorkPlaceService {
     @Transactional(readOnly = true)
     public Workplace findById(Long id) {
         return workplaceRepository.findById(id)
-                // Lance une exception si aucun poste n'est trouvé avec cet id
                 .orElseThrow(() -> new EntityNotFoundException("Workplace introuvable avec l'id : " + id));
     }
 
     /**
      * Ajoute un nouveau poste à un workbook.
-     * Le rang est attribué automatiquement (max actuel + 1, commence à 1).
-     * Si le poste est marqué comme actuel, les autres postes sont désactivés.
+     * Insère toujours en rang 1 et décale les postes existants via une requête SQL directe.
      */
     public Workplace addWorkplace(Long workbookId, Workplace workplace) {
-        // Vérifie que le workbook existe avant d'ajouter le poste
         Workbook workbook = workbookRepository.findById(workbookId)
                 .orElseThrow(() -> new EntityNotFoundException("Workbook introuvable avec l'id : " + workbookId));
 
-        // Calcule le prochain rang : max existant + 1, ou 1 s'il n'y a aucun poste
-        int nextRank = workplaceRepository.findMaxRankByWorkbookId(workbookId)
-                .map(max -> max + 1)
-                .orElse(1);
+        // ✅ Force la création d'un nouvel enregistrement
+        // Evite qu'un id parasite provoque un UPDATE au lieu d'un INSERT
+        workplace.setId(null);
 
-        // Associe le poste au workbook et lui attribue son rang
-        workplace.setWorkbook(workbook);
-        workplace.setRank(nextRank);
-
-        // Si ce poste est marqué comme actuel, on retire le flag des autres postes
         if (workplace.isCurrent()) {
             clearCurrentFlag(workbookId);
         }
 
-        // Sauvegarde et retourne le nouveau poste
+        workplaceRepository.incrementRanksFrom(workbookId, 1);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        workplace.setWorkbook(workbook);
+        workplace.setRank(1);
         return workplaceRepository.save(workplace);
     }
 
@@ -69,12 +66,16 @@ public class WorkPlaceService {
      * Si le poste devient actuel, les autres postes sont désactivés.
      */
     public Workplace updateWorkplace(Long workplaceId, Workplace updated) {
-        // Récupère le poste existant (lève une exception s'il n'existe pas)
+        // Récupère le poste existant
         Workplace existing = findById(workplaceId);
 
-        // Si le poste passe à "actuel" alors qu'il ne l'était pas, on nettoie les autres
+        // Si le poste passe à "actuel" alors qu'il ne l'était pas, nettoie les autres
         if (updated.isCurrent() && !existing.isCurrent()) {
             clearCurrentFlag(existing.getWorkbook().getId());
+            entityManager.flush();
+            entityManager.clear();
+            // Recharge le poste après le clear du cache
+            existing = findById(workplaceId);
         }
 
         // Applique les nouvelles valeurs sur le poste existant
@@ -86,7 +87,6 @@ public class WorkPlaceService {
         existing.setStartDate(updated.getStartDate());
         existing.setEndDate(updated.getEndDate());
 
-        // Sauvegarde et retourne le poste mis à jour
         return workplaceRepository.save(existing);
     }
 
@@ -99,8 +99,9 @@ public class WorkPlaceService {
         Long workbookId = workplace.getWorkbook().getId();
         int deletedRank = workplace.getRank();
 
-        // Supprime le poste de la base de données
+        // Supprime le poste et flush avant de réajuster les rangs
         workplaceRepository.delete(workplace);
+        entityManager.flush();
 
         // Décrémente de 1 le rang de tous les postes situés après celui supprimé
         workplaceRepository.decrementRanksAfter(workbookId, deletedRank);
@@ -119,13 +120,24 @@ public class WorkPlaceService {
         int currentRank = workplace.getRank();
         int targetRank = currentRank - 1;
 
-        // Échange les rangs : le poste qui occupait la position cible prend le rang actuel
+        // Étape 1 : rang temporaire sur le poste qui occupe la position cible
+        // Évite le conflit de contrainte unique (workbook_id, rank) lors de l'échange
         workplaceRepository.findByWorkbookIdAndRank(workbookId, targetRank)
-                .ifPresent(other -> other.setRank(currentRank));
+                .ifPresent(other -> {
+                    other.setRank(-1); // rang temporaire pour libérer la position cible
+                    workplaceRepository.saveAndFlush(other);
+                });
 
-        // Attribue le rang cible au poste déplacé
+        // Étape 2 : déplace le poste courant vers la position cible
         workplace.setRank(targetRank);
-        workplaceRepository.save(workplace);
+        workplaceRepository.saveAndFlush(workplace);
+
+        // Étape 3 : attribue l'ancien rang au poste déplacé temporairement
+        workplaceRepository.findByWorkbookIdAndRank(workbookId, -1)
+                .ifPresent(other -> {
+                    other.setRank(currentRank);
+                    workplaceRepository.save(other);
+                });
     }
 
     /**
@@ -144,18 +156,32 @@ public class WorkPlaceService {
 
         int targetRank = currentRank + 1;
 
-        // Échange les rangs : le poste qui occupait la position cible prend le rang actuel
+        // Étape 1 : rang temporaire sur le poste qui occupe la position cible
+        // Évite le conflit de contrainte unique (workbook_id, rank) lors de l'échange
         workplaceRepository.findByWorkbookIdAndRank(workbookId, targetRank)
-                .ifPresent(other -> other.setRank(currentRank));
+                .ifPresent(other -> {
+                    other.setRank(-1); // rang temporaire pour libérer la position cible
+                    workplaceRepository.saveAndFlush(other);
+                });
 
-        // Attribue le rang cible au poste déplacé
+        // Étape 2 : déplace le poste courant vers la position cible
         workplace.setRank(targetRank);
-        workplaceRepository.save(workplace);
+        workplaceRepository.saveAndFlush(workplace);
+
+        // Étape 3 : attribue l'ancien rang au poste déplacé temporairement
+        workplaceRepository.findByWorkbookIdAndRank(workbookId, -1)
+                .ifPresent(other -> {
+                    other.setRank(currentRank);
+                    workplaceRepository.save(other);
+                });
     }
 
-    // Retire le flag "actuel" de tous les postes d'un workbook
+    /**
+     * Retire le flag "actuel" de tous les postes d'un workbook via UPDATE SQL direct.
+     * N'utilise pas le cache Hibernate pour garantir la cohérence en BDD.
+     */
     private void clearCurrentFlag(Long workbookId) {
-        workplaceRepository.findByWorkbookIdOrderByRankAsc(workbookId)
-                .forEach(wp -> wp.setCurrent(false));
+        // UPDATE SQL direct — plus fiable que de modifier les entités en mémoire
+        workplaceRepository.clearCurrentFlagByWorkbookId(workbookId);
     }
 }
