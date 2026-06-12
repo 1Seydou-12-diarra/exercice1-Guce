@@ -33,4 +33,5 @@ public interface WorkBookRepository extends JpaRepository<Workbook, Long> {
     // triés par nom de famille puis par prénom, tous les deux en ordre alphabétique
     @Query("SELECT w FROM Workbook w ORDER BY w.lastName ASC, w.firstName ASC")
     List<Workbook> findAllOrderByName();
+
 }

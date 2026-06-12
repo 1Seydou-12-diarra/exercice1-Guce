@@ -1,13 +1,16 @@
 package com.workbook_manager.workbook_manager.service;
 
-
+import com.workbook_manager.workbook_manager.dto.WorkbookDto;
+import com.workbook_manager.workbook_manager.dto.WorkplaceDto;
 import com.workbook_manager.workbook_manager.entite.Workbook;
+import com.workbook_manager.workbook_manager.entite.Workplace;
 import com.workbook_manager.workbook_manager.repository.WorkBookRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -15,60 +18,105 @@ import java.util.List;
 @Transactional
 public class WorkBookService {
 
-    // Injection du repository pour accéder aux données des workbooks
-    private final WorkBookRepository  workbookRepository;
+    private final WorkBookRepository workbookRepository;
 
-    // Lecture seule : optimise la transaction (pas de flush ni de dirty checking)
-    @Transactional(readOnly = true)
-    public List<Workbook> findAll() {
-        // Retourne tous les workbooks triés par nom via une requête personnalisée
-        return workbookRepository.findAllOrderByName();
+    // Retourne la liste de tous les workbooks, triés par nom
+
+    public List<WorkbookDto> findAll() {
+        return workbookRepository.findAllOrderByName()
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
-    // Lecture seule : récupère un workbook par son identifiant
-    @Transactional(readOnly = true)
-    public Workbook findById(Long id) {
-        return workbookRepository.findById(id)
-                // Lance une exception si aucun workbook n'est trouvé avec cet id
-                .orElseThrow(() -> new EntityNotFoundException("Workbook introuvable avec "));
+    // Retourne un workbook par son identifiant
+
+    public WorkbookDto findById(Long id) {
+        return toDto(findEntityById(id));
     }
 
-    // Crée et enregistre un nouveau workbook en base
-    public Workbook save(Workbook workbook) {
-        // Vérifie que le passeport et l'email ne sont pas déjà utilisés
+    // Crée un nouveau workbook après vérification des doublons
+    public WorkbookDto save(WorkbookDto workbookDto) {
+        Workbook workbook = toEntity(workbookDto);
         validateUniqueness(workbook);
-        return workbookRepository.save(workbook);
+        return toDto(workbookRepository.save(workbook));
     }
 
-    // Met à jour un workbook existant identifié par son id
-    public Workbook update(Long id, Workbook updated) {
-        // Récupère le workbook existant (lève une exception s'il n'existe pas)
-        Workbook existing = findById(id);
+    // Met à jour les informations d'un workbook existant
+    public WorkbookDto update(Long id, WorkbookDto updated) {
+        Workbook existing = findEntityById(id);
 
-        // Vérifie l'unicité en excluant le workbook lui-même de la comparaison
         validateUniquenessForUpdate(updated, id);
 
-        // Applique les nouvelles valeurs sur l'entité existante
         existing.setFirstName(updated.getFirstName());
         existing.setLastName(updated.getLastName());
         existing.setBirthdate(updated.getBirthdate());
         existing.setPassportNumber(updated.getPassportNumber());
         existing.setEmail(updated.getEmail());
 
-        // Sauvegarde et retourne le workbook mis à jour
-        return workbookRepository.save(existing);
+        return toDto(workbookRepository.save(existing));
     }
 
-    // Supprime un workbook par son id
+    // Supprime un workbook par son identifiant
     public void deleteById(Long id) {
-        // Vérifie que le workbook existe avant de tenter la suppression
         if (!workbookRepository.existsById(id)) {
-            throw new EntityNotFoundException("Workbook introuvable " );
+            throw new EntityNotFoundException("Workbook introuvable ");
         }
         workbookRepository.deleteById(id);
     }
 
-    // Vérifie qu'aucun autre workbook n'utilise déjà ce passeport ou cet email (création)
+    // Recherche un workbook en base, lève une exception s'il est absent
+    private Workbook findEntityById(Long id) {
+        return workbookRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Workbook introuvable avec l'id : " + id));
+    }
+
+    // Convertit un DTO en entité Workbook
+    private Workbook toEntity(WorkbookDto dto) {
+        Workbook workbook = new Workbook();
+        workbook.setId(dto.getId());
+        workbook.setFirstName(dto.getFirstName());
+        workbook.setLastName(dto.getLastName());
+        workbook.setBirthdate(dto.getBirthdate());
+        workbook.setPassportNumber(dto.getPassportNumber());
+        workbook.setEmail(dto.getEmail());
+        return workbook;
+    }
+
+    // Convertit une entité Workbook en DTO, avec ses postes triés par rang
+    private WorkbookDto toDto(Workbook workbook) {
+        WorkbookDto dto = new WorkbookDto();
+        dto.setId(workbook.getId());
+        dto.setFirstName(workbook.getFirstName());
+        dto.setLastName(workbook.getLastName());
+        dto.setBirthdate(workbook.getBirthdate());
+        dto.setPassportNumber(workbook.getPassportNumber());
+        dto.setEmail(workbook.getEmail());
+        dto.setWorkplaces(workbook.getWorkplaces()
+                .stream()
+                .sorted(Comparator.comparing(Workplace::getRank, Comparator.nullsLast(Integer::compareTo)))
+                .map(this::toWorkplaceDto)
+                .toList());
+        return dto;
+    }
+
+    // Convertit une entité Workplace en DTO
+    private WorkplaceDto toWorkplaceDto(Workplace workplace) {
+        WorkplaceDto dto = new WorkplaceDto();
+        dto.setId(workplace.getId());
+        dto.setCurrent(workplace.isCurrent());
+        dto.setCompanyCode(workplace.getCompanyCode());
+        dto.setCompanyName(workplace.getCompanyName());
+        dto.setCountryCode(workplace.getCountryCode());
+        dto.setCountryName(workplace.getCountryName());
+        dto.setStartDate(workplace.getStartDate());
+        dto.setEndDate(workplace.getEndDate());
+        dto.setRank(workplace.getRank());
+        dto.setWorkbookId(workplace.getWorkbook() != null ? workplace.getWorkbook().getId() : null);
+        return dto;
+    }
+
+    // Vérifie qu'aucun autre workbook n'utilise déjà le même passeport ou email
     private void validateUniqueness(Workbook workbook) {
         if (workbookRepository.existsByPassportNumber(workbook.getPassportNumber())) {
             throw new IllegalArgumentException("Ce numéro de passeport est déjà utilisé.");
@@ -78,13 +126,11 @@ public class WorkBookService {
         }
     }
 
-    // Vérifie l'unicité lors d'une mise à jour en ignorant le workbook en cours de modification
-    private void validateUniquenessForUpdate(Workbook workbook, Long id) {
-        // Cherche un autre workbook (id différent) ayant le même numéro de passeport
+    // Même vérification que validateUniqueness, mais en excluant le workbook en cours de modification
+    private void validateUniquenessForUpdate(WorkbookDto workbook, Long id) {
         if (workbookRepository.existsByPassportNumberAndIdNot(workbook.getPassportNumber(), id)) {
             throw new IllegalArgumentException("Ce numéro de passeport est déjà utilisé.");
         }
-        // Cherche un autre workbook (id différent) ayant le même email
         if (workbookRepository.existsByEmailAndIdNot(workbook.getEmail(), id)) {
             throw new IllegalArgumentException("Cet email est déjà utilisé.");
         }

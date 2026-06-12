@@ -1,29 +1,76 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${pageTitle} ?: 'Workbook Manager'">Workbook Manager</title>
+    <title th:text="${title}">GUCE Workbook Manager</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 
-<header class="app-header">
-    <div class="header-inner">
-        <a th:href="@{/workbooks}" class="logo">
-            <span>Workbook Manager</span>
-        </a>
-        <nav>
-            <a th:href="@{/workbooks}" class="nav-link">Workbooks</a>
-            <a th:href="@{/workbooks/new}" class="btn btn-sm btn-primary"> New</a>
-        </nav>
+<header class="guce-header" th:fragment="topbar">
+    <div class="guce-institution-bar">
+        <div class="guce-header-inner">
+            <span>Guichet Unique du Commerce Exterieur</span>
+            <span class="guce-env">Espace de gestion</span>
+        </div>
+    </div>
+
+    <div class="guce-header-main">
+        <div class="guce-header-inner">
+            <a th:href="@{/workbooks}" class="guce-brand" aria-label="Accueil GUCE Workbook Manager">
+                <span class="guce-brand-mark">G</span>
+                <span class="guce-brand-text">
+                    <strong>GUCE</strong>
+                    <small>Workbook Manager</small>
+                </span>
+            </a>
+
+            <nav class="guce-topnav" aria-label="Navigation principale">
+                <a th:href="@{/workbooks}">Dossiers</a>
+                <a th:href="@{/workbooks/new}">Nouveau dossier</a>
+            </nav>
+
+            <div class="guce-user">
+            </div>
+        </div>
     </div>
 </header>
 
-<main class="main-content">
-    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
-</main>
+<aside class="guce-sidebar" th:fragment="sidebar(active)" aria-label="Menu GUCE">
+    <div class="guce-sidebar-section">
+        <span class="guce-sidebar-title">Traitement</span>
+        <a th:href="@{/workbooks}"
+           class="guce-sidebar-link"
+           th:classappend="${active == 'workbooks'} ? 'is-active'">
+            <span class="guce-sidebar-icon">01</span>
+            <span>Workbooks</span>
+        </a>
+        <a th:href="@{/workbooks/new}"
+           class="guce-sidebar-link"
+           th:classappend="${active == 'new'} ? 'is-active'">
+            <span class="guce-sidebar-icon">02</span>
+            <span>Nouveau workbook</span>
+        </a>
+    </div>
+
+    <div class="guce-sidebar-section">
+        <span class="guce-sidebar-title">Reference</span>
+        <span class="guce-sidebar-link is-muted">
+            <span class="guce-sidebar-icon">03</span>
+            <span>Workplaces</span>
+        </span>
+        <span class="guce-sidebar-link is-muted">
+            <span class="guce-sidebar-icon">04</span>
+            <span>Parametres</span>
+        </span>
+    </div>
+</aside>
+
+<footer class="guce-footer" th:fragment="footer">
+    <span>GUCE Workbook Manager</span>
+    <span>Structure d'application integree</span>
+</footer>
 
 </body>
 </html>
