@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class WorkBookService {
 
     private final WorkBookRepository workbookRepository;
 
-    // Retourne la liste de tous les workbooks, triés par nom
+    // ── Lecture ──────────────────────────────────────────────────────────────
 
     public List<WorkbookDto> findAll() {
         return workbookRepository.findAllOrderByName()
@@ -29,20 +30,28 @@ public class WorkBookService {
                 .toList();
     }
 
-    // Retourne un workbook par son identifiant
-
     public WorkbookDto findById(Long id) {
         return toDto(findEntityById(id));
     }
 
-    // Crée un nouveau workbook après vérification des doublons
+    // ── Création : workbook + workplaces en une transaction ──────────────────
+
     public WorkbookDto save(WorkbookDto workbookDto) {
+        validateUniqueness(workbookDto);
+
         Workbook workbook = toEntity(workbookDto);
-        validateUniqueness(workbook);
+
+        // Attacher les workplaces transmis depuis le formulaire
+        if (workbookDto.getWorkplaces() != null && !workbookDto.getWorkplaces().isEmpty()) {
+            List<Workplace> workplaces = buildWorkplaces(workbookDto.getWorkplaces(), workbook);
+            workbook.setWorkplaces(workplaces);
+        }
+
         return toDto(workbookRepository.save(workbook));
     }
 
-    // Met à jour les informations d'un workbook existant
+    // ── Modification : workbook + remplacement complet des workplaces ─────────
+
     public WorkbookDto update(Long id, WorkbookDto updated) {
         Workbook existing = findEntityById(id);
 
@@ -54,24 +63,73 @@ public class WorkBookService {
         existing.setPassportNumber(updated.getPassportNumber());
         existing.setEmail(updated.getEmail());
 
+        // Remplacement complet : on efface les anciens workplaces et on remet les nouveaux.
+        // orphanRemoval = true sur la relation → les anciens seront supprimés automatiquement.
+        existing.getWorkplaces().clear();
+
+        if (updated.getWorkplaces() != null && !updated.getWorkplaces().isEmpty()) {
+            List<Workplace> workplaces = buildWorkplaces(updated.getWorkplaces(), existing);
+            existing.getWorkplaces().addAll(workplaces);
+        }
+
         return toDto(workbookRepository.save(existing));
     }
 
-    // Supprime un workbook par son identifiant
+    // ── Suppression ───────────────────────────────────────────────────────────
+
     public void deleteById(Long id) {
         if (!workbookRepository.existsById(id)) {
-            throw new EntityNotFoundException("Workbook introuvable ");
+            throw new EntityNotFoundException("Workbook introuvable");
         }
         workbookRepository.deleteById(id);
     }
 
-    // Recherche un workbook en base, lève une exception s'il est absent
+    // ── Helpers internes ─────────────────────────────────────────────────────
+
+    /**
+     * Construit la liste des entités Workplace à partir des DTOs.
+     * - Les rangs sont réassignés séquentiellement (1, 2, 3…).
+     * - Si plusieurs workplaces sont marqués "current", seul le dernier le reste.
+     */
+    private List<Workplace> buildWorkplaces(List<WorkplaceDto> dtos, Workbook workbook) {
+        // Tri défensif par rang entrant, puis réassignation propre
+        List<WorkplaceDto> sorted = dtos.stream()
+                .sorted(Comparator.comparingInt(wp ->
+                        wp.getRank() != null ? wp.getRank() : Integer.MAX_VALUE))
+                .toList();
+
+        List<Workplace> result = new ArrayList<>();
+
+        // Un seul "current" autorisé : le premier trouvé dans l'ordre
+        boolean currentAssigned = false;
+
+        for (int i = 0; i < sorted.size(); i++) {
+            WorkplaceDto dto = sorted.get(i);
+            Workplace wp = new Workplace();
+            wp.setCompanyCode(dto.getCompanyCode());
+            wp.setCompanyName(dto.getCompanyName());
+            wp.setCountryCode(dto.getCountryCode());
+            wp.setCountryName(dto.getCountryName());
+            wp.setStartDate(dto.getStartDate());
+            wp.setEndDate(dto.getEndDate());
+            wp.setRank(i + 1);  // rang réassigné proprement
+            wp.setWorkbook(workbook);
+
+            boolean isCurrent = dto.isCurrent() && !currentAssigned;
+            wp.setCurrent(isCurrent);
+            if (isCurrent) currentAssigned = true;
+
+            result.add(wp);
+        }
+
+        return result;
+    }
+
     private Workbook findEntityById(Long id) {
         return workbookRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Workbook introuvable avec l'id : " + id));
     }
 
-    // Convertit un DTO en entité Workbook
     private Workbook toEntity(WorkbookDto dto) {
         Workbook workbook = new Workbook();
         workbook.setId(dto.getId());
@@ -83,7 +141,6 @@ public class WorkBookService {
         return workbook;
     }
 
-    // Convertit une entité Workbook en DTO, avec ses postes triés par rang
     private WorkbookDto toDto(Workbook workbook) {
         WorkbookDto dto = new WorkbookDto();
         dto.setId(workbook.getId());
@@ -94,13 +151,13 @@ public class WorkBookService {
         dto.setEmail(workbook.getEmail());
         dto.setWorkplaces(workbook.getWorkplaces()
                 .stream()
-                .sorted(Comparator.comparing(Workplace::getRank, Comparator.nullsLast(Integer::compareTo)))
+                .sorted(Comparator.comparing(Workplace::getRank,
+                        Comparator.nullsLast(Integer::compareTo)))
                 .map(this::toWorkplaceDto)
                 .toList());
         return dto;
     }
 
-    // Convertit une entité Workplace en DTO
     private WorkplaceDto toWorkplaceDto(Workplace workplace) {
         WorkplaceDto dto = new WorkplaceDto();
         dto.setId(workplace.getId());
@@ -116,22 +173,20 @@ public class WorkBookService {
         return dto;
     }
 
-    // Vérifie qu'aucun autre workbook n'utilise déjà le même passeport ou email
-    private void validateUniqueness(Workbook workbook) {
-        if (workbookRepository.existsByPassportNumber(workbook.getPassportNumber())) {
+    private void validateUniqueness(WorkbookDto dto) {
+        if (workbookRepository.existsByPassportNumber(dto.getPassportNumber())) {
             throw new IllegalArgumentException("Ce numéro de passeport est déjà utilisé.");
         }
-        if (workbookRepository.existsByEmail(workbook.getEmail())) {
+        if (workbookRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("Cet email est déjà utilisé.");
         }
     }
 
-    // Même vérification que validateUniqueness, mais en excluant le workbook en cours de modification
-    private void validateUniquenessForUpdate(WorkbookDto workbook, Long id) {
-        if (workbookRepository.existsByPassportNumberAndIdNot(workbook.getPassportNumber(), id)) {
+    private void validateUniquenessForUpdate(WorkbookDto dto, Long id) {
+        if (workbookRepository.existsByPassportNumberAndIdNot(dto.getPassportNumber(), id)) {
             throw new IllegalArgumentException("Ce numéro de passeport est déjà utilisé.");
         }
-        if (workbookRepository.existsByEmailAndIdNot(workbook.getEmail(), id)) {
+        if (workbookRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
             throw new IllegalArgumentException("Cet email est déjà utilisé.");
         }
     }
