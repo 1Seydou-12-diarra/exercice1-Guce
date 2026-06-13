@@ -12,7 +12,9 @@
         <main class="guce-main">
 
             <section class="guce-content-bar">
-
+                <div>
+                    <h1 th:text="${pageTitle}">Workbook</h1>
+                </div>
                 <a th:href="${workbook.id != null ? '/workbooks/' + workbook.id : '/workbooks'}"
                    class="btn btn-outline">← Retour</a>
             </section>
@@ -37,7 +39,6 @@
                         <span class="tab-badge" id="wp-tab-badge">0</span>
                     </button>
                 </div>
-
                 <!-- ═══════════════════════════════════════════════
                      ONGLET 1 — WORKBOOK
                 ════════════════════════════════════════════════ -->
@@ -87,7 +88,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="passportNumber">N° passeport <span class="required">*</span></label>
+                                    <label for="passportNumber">Numéro de passeport <span class="required">*</span></label>
                                     <input type="text" id="passportNumber" th:field="*{passportNumber}"
                                            class="form-control"
                                            th:classappend="${#fields.hasErrors('passportNumber')} ? 'is-invalid'"
@@ -117,7 +118,7 @@
                                 <a th:href="${workbook.id != null ? '/workbooks/' + workbook.id : '/workbooks'}"
                                    class="btn btn-outline">Annuler</a>
                                 <button type="submit" id="btn-submit" class="btn btn-primary"
-                                        th:text="${workbook.id != null ? 'Enregistrer' : 'Créer'}">Créer</button>
+                                        th:text="${workbook.id != null ? 'Enregistrer' : 'Créer'}">Enregistrer</button>
                             </div>
 
                         </form>
@@ -148,17 +149,17 @@
 
                         <!-- Tableau (affiché / masqué par JS) -->
                         <div class="table-responsive" id="wp-table-container" style="display:none">
-                            <table class="table" id="wp-table">
+                            <table class="table" id="wp-table" style="min-width:900px;table-layout:auto">
                                 <thead>
                                 <tr>
-                                    <th>Rang</th>
+                                    <th style="width:50px">Rang</th>
                                     <th>Code entreprise</th>
-                                    <th>Nom Entreprise</th>
-                                    <th>Code pays</th>
-                                    <th>Nom Pays</th>
-                                    <th>Date Début</th>
-                                    <th>Date Fin</th>
-                                    <th class="actions-col">Actions</th>
+                                    <th>Entreprise</th>
+                                    <th style="width:90px">Code pays</th>
+                                    <th>Pays</th>
+                                    <th style="width:100px">Début</th>
+                                    <th style="width:100px">Fin</th>
+                                    <th style="width:80px;text-align:center">Actions</th>
                                 </tr>
                                 </thead>
                                 <tbody id="wp-tbody">
@@ -230,15 +231,15 @@
                 <div class="form-group">
                     <label for="m-endDate">Date de fin</label>
                     <input type="date" id="m-endDate" class="form-control">
-                    <div class="form-hint">Laisser vide si poste en cours</div>
+                    <div class="form-hint">Laisser vide si workplace en cours</div>
                 </div>
 
                 <div class="form-group form-group-full">
                     <label class="checkbox-label">
                         <input type="checkbox" id="m-current">
-                        Poste actuel
+                        Workplace actuel
                     </label>
-                    <div class="form-hint">Un seul poste peut être marqué comme actuel.</div>
+                    <div class="form-hint">Un seul workplace peut être marqué comme actuel.</div>
                 </div>
 
             </div><!-- /form-grid -->
@@ -324,27 +325,26 @@
                 workplaces.forEach(function (wp, idx) {
                     var tr = document.createElement('tr');
                     tr.innerHTML =
-                        '<td class="mono muted">' + wp.rank + '</td>' +
-                        '<td>' + (wp.current
-                            ? '<span class="badge badge-current">En poste</span>'
-                            : '<span class="badge">Passe</span>') + '</td>' +
-                        '<td class="mono">' + esc(wp.companyCode) + '</td>' +
-                        '<td>' + esc(wp.companyName) + '</td>' +
-                        '<td class="mono">' + esc(wp.countryCode) + '</td>' +
-                        '<td>' + esc(wp.countryName) + '</td>' +
-                        '<td class="mono">' + esc(wp.startDate) + '</td>' +
-                        '<td class="mono">' + (wp.endDate ? esc(wp.endDate) : '<span class="muted">-</span>') + '</td>' +
-                        '<td class="actions">' +
+                        '<td class="mono muted" style="white-space:nowrap">' + wp.rank + '</td>' +
+                        '<td class="mono" style="white-space:nowrap">' + esc(wp.companyCode) + '</td>' +
+                        '<td style="white-space:nowrap">' + esc(wp.companyName) + '</td>' +
+                        '<td class="mono" style="white-space:nowrap">' + esc(wp.countryCode) + '</td>' +
+                        '<td style="white-space:nowrap">' + esc(wp.countryName) + '</td>' +
+                        '<td class="mono" style="white-space:nowrap">' + esc(wp.startDate) + '</td>' +
+                        '<td class="mono" style="white-space:nowrap">' + (wp.endDate ? esc(wp.endDate) : '<span class="muted">-</span>') + '</td>' +
+                        '<td style="text-align:center">' +
+                        '<div style="display:inline-flex;gap:.35rem;align-items:center">' +
                         '<button type="button" class="btn btn-sm btn-icon btn-edit" data-idx="' + idx + '" title="Modifier">' +
-                        '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15">' +
+                        '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">' +
                         '<path d="M13.586 3.586a2 2 0 1 1 2.828 2.828L7.5 15.328l-3.75.75.75-3.75 9.086-8.742z"/>' +
                         '</svg>' +
                         '</button>' +
                         '<button type="button" class="btn btn-sm btn-icon btn-delete btn-danger" data-idx="' + idx + '" title="Supprimer">' +
-                        '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15">' +
+                        '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">' +
                         '<path d="M6 6l8 8M14 6l-8 8"/>' +
                         '</svg>' +
                         '</button>' +
+                        '</div>' +
                         '</td>';
                     tbody.appendChild(tr);
                 });

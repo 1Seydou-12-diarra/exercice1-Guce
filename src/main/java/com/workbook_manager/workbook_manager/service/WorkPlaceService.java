@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,13 @@ public class WorkPlaceService {
                 .stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+
+    // Retourne les postes d'un workbook avec pagination
+    public Page<WorkplaceDto> findByWorkbookIdPaginated(Long workbookId, Pageable pageable) {
+        Page<Workplace> page = workplaceRepository.findByWorkbookIdOrderByRankAsc(workbookId, pageable);
+        return page.map(this::toDto);
     }
 
     // Retourne un poste par son identifiant

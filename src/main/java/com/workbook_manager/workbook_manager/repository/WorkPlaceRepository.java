@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 
 @Repository
@@ -43,4 +45,7 @@ public interface WorkPlaceRepository extends JpaRepository<Workplace, Long> {
     @Modifying
     @Query("UPDATE Workplace wp SET wp.current = false WHERE wp.workbook.id = :workbookId")
     void clearCurrentFlagByWorkbookId(@Param("workbookId") Long workbookId);
+
+    // Retourne les postes d'un workbook avec pagination, triés par rang croissant
+    Page<Workplace> findByWorkbookIdOrderByRankAsc(Long workbookId, Pageable pageable);
 }

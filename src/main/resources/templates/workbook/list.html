@@ -12,11 +12,10 @@
         <main class="guce-main">
             <section class="guce-content-bar">
                 <div>
-                    <p class="eyebrow">Gestion des dossiers</p>
                     <h1>Workbooks</h1>
                     <p class="page-subtitle">Suivi des workbooks et de leurs workplaces.</p>
                 </div>
-                <a th:href="@{/workbooks/new}" class="btn btn-primary">+ New Workbook</a>
+                <a th:href="@{/workbooks/new}" class="btn btn-primary">+ Ajouter</a>
             </section>
 
             <div class="main-content">
@@ -39,40 +38,46 @@
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Nom & Prénom </th>
-                                    <th>Age</th>
-                                    <th>Email</th>
-                                    <th>N° Passport</th>
-                                    <th>Workplaces</th>
-                                    <th>Actions</th>
-                                </tr>
+                            <tr>
+                                <th style="width:50px">N°</th>
+                                <th>Nom &amp; Prénom</th>
+                                <th style="width:80px">Age</th>
+                                <th>Email</th>
+                                <th style="width:120px">N° Passport</th>
+                                <th style="width:110px">Workplaces</th>
+                                <th style="width:200px;text-align:center">Actions</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                <tr th:each="wb, stat : ${workbooks}">
-                                    <td class="muted" th:text="${stat.index + 1}">1</td>
-                                    <td>
-                                        <a th:href="@{/workbooks/{id}(id=${wb.id})}"
-                                           class="link-name"
-                                           th:text="${wb.fullName}">fullName</a>
-                                    </td>
-                                    <td th:text="${wb.age != null ? wb.age + ' ans' : '-'}">30 ans</td>
-                                    <td th:text="${wb.email}">email@example.com</td>
-                                    <td class="mono" th:text="${wb.passportNumber}">AB123456</td>
-                                    <td>
+                            <tr th:each="wb, stat : ${workbooks}">
+                                <td class="muted mono" th:text="${stat.index + 1}">1</td>
+                                <td>
+                                    <a th:href="@{/workbooks/{id}(id=${wb.id})}"
+                                       class="link-name"
+                                       th:text="${wb.fullName}">Nom & Prénom</a>
+                                </td>
+                                <td th:text="${wb.age != null ? wb.age + ' ans' : '-'}">30 ans</td>
+                                <td th:text="${wb.email}">email@example.com</td>
+                                <td class="mono" th:text="${wb.passportNumber}">AB123456</td>
+                                <td>
                                         <span class="badge"
-                                              th:text="${wb.workplaces.size()} + ' poste(s)'">0 workplace(s)</span>
-                                    </td>
-                                    <td class="actions">
-                                        <a th:href="@{/workbooks/{id}(id=${wb.id})}" class="btn btn-sm btn-outline">detail</a>
-                                        <a th:href="@{/workbooks/{id}/edit(id=${wb.id})}" class="btn btn-sm btn-secondary">modifier</a>
-                                        <form th:action="@{/workbooks/{id}/delete(id=${wb.id})}" method="post"
-                                              onsubmit="return confirm('Supprimer ce workbook ?')">
+                                              th:text="${wb.workplaces.size()} ">0 wokplaces(s)</span>
+                                </td>
+                                <td style="text-align:center">
+                                    <div class="row-actions" style="justify-content:center">
+                                        <a th:href="@{/workbooks/{id}(id=${wb.id})}"
+                                           class="btn btn-sm btn-outline">Detail</a>
+                                        <a th:href="@{/workbooks/{id}/edit(id=${wb.id})}"
+                                           class="btn btn-sm btn-secondary">Modifier</a>
+                                        <form th:action="@{/workbooks/{id}/delete(id=${wb.id})}"
+                                              method="post"
+                                              style="display:inline"
+                                              onsubmit="return confirm('Supprimer ce workbook et ses workplaces ?')">
                                             <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
                                         </form>
-                                    </td>
-                                </tr>
+                                    </div>
+                                </td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>

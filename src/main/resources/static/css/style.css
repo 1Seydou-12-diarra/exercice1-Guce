@@ -397,7 +397,7 @@ form {
   background: var(--surface-soft);
   font-size: .76rem;
   font-weight: 800;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: .04em;
 }
 
@@ -1144,4 +1144,72 @@ body.modal-open {
 
 .table .actions-col {
   width: 80px;
+}
+
+/* Pagination */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 .6rem;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: .88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .12s, border-color .12s, color .12s;
+}
+
+.page-btn:hover {
+  background: var(--primary-lt);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.page-btn-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  cursor: default;
+}
+
+.page-btn-active:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.page-btn-disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  margin-top: .6rem;
+  color: var(--text-muted);
+  font-size: .82rem;
+}
+
+/* Ligne d'actions dans les tableaux */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: nowrap;
+}
+
+.row-actions form {
+  display: inline;
 }

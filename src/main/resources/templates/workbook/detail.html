@@ -17,8 +17,8 @@
                     <p class="page-subtitle">Consultation et gestion des workplaces associes.</p>
                 </div>
                 <div class="page-actions">
-                    <a th:href="@{/workbooks}" class="btn btn-outline">Back to list</a>
-                    <a th:href="@{/workbooks/{id}/edit(id=${workbook.id})}" class="btn btn-secondary">Update</a>
+                    <a th:href="@{/workbooks}" class="btn btn-outline">Retour</a>
+                    <a th:href="@{/workbooks/{id}/edit(id=${workbook.id})}" class="btn btn-secondary">Modifier</a>
                 </div>
             </section>
 
@@ -34,26 +34,26 @@
                         <h2 th:text="${workbook.fullName}">Full name</h2>
                         <div class="profile-meta">
                             <span th:if="${workbook.age != null}">
-                                Age: <strong th:text="${workbook.age}">30</strong> ans
+                                Age : <strong th:text="${workbook.age}">30</strong> ans
                             </span>
                             <span>
-                                Birthdate:
+                                Date de naissance :
                                 <strong th:text="${#temporals.format(workbook.birthdate, 'dd/MM/yyyy')}">01/01/1990</strong>
                             </span>
                             <span>
-                                Email:
+                                Email :
                                 <a th:href="'mailto:' + ${workbook.email}" class="link" th:text="${workbook.email}">email</a>
                             </span>
                             <span>
-                                Passport:
+                                Passeport :
                                 <span class="mono" th:text="${workbook.passportNumber}">AB123456</span>
                             </span>
                         </div>
                     </div>
                     <div class="profile-actions">
                         <form th:action="@{/workbooks/{id}/delete(id=${workbook.id})}" method="post"
-                              onsubmit="return confirm('Delete the workbook and workplaces ?')">
-                            <button type="submit" class="btn btn-danger">Delete</button>
+                              onsubmit="return confirm('Supprimer ce workbook et ses workplaces ?')">
+                            <button type="submit" class="btn btn-danger">Supprimer</button>
                         </form>
                     </div>
                 </div>
@@ -62,12 +62,12 @@
                     <div class="section-header">
                         <div>
                             <p class="eyebrow">Historique</p>
-                            <h2>Workplaces <span class="badge" th:text="${workplaces.size()}">0</span></h2>
+                            <h2>Workplaces <span class="badge" th:text="${totalElements}">0</span></h2>
                         </div>
                     </div>
 
                     <div th:if="${workplaces.isEmpty()}" class="empty-state-small">
-                        <p>No workplace.</p>
+                        <p>Aucun workplace enregistre.</p>
                     </div>
 
                     <div th:unless="${workplaces.isEmpty()}" class="workplaces-list">
@@ -80,9 +80,9 @@
                             <div class="wp-body">
                                 <div class="wp-header">
                                     <div class="wp-title">
-                                        <strong th:text="${wp.companyName}">Company Name</strong>
+                                        <strong th:text="${wp.companyName}">Nom de Compagnie</strong>
                                         <span class="wp-code muted" th:text="'(' + ${wp.companyCode} + ')'"></span>
-                                        <span th:if="${wp.current}" class="tag tag-current">Current</span>
+                                        <span th:if="${wp.current}" class="tag tag-current">Actuel</span>
                                     </div>
                                     <div class="wp-period muted">
                                         <span th:text="${#temporals.format(wp.startDate, 'MM/yyyy')}">01/2020</span>
@@ -93,8 +93,8 @@
                                 </div>
                                 <div class="wp-meta">
                                     <span>
-                                        Country:
-                                        <span th:text="${wp.countryName}">Country Name</span>
+                                        Pays :
+                                        <span th:text="${wp.countryName}">Nom du pays</span>
                                         <span class="muted" th:text="'(' + ${wp.countryCode} + ')'"></span>
                                     </span>
                                 </div>
@@ -103,28 +103,59 @@
                             <div class="wp-actions">
                                 <form th:action="@{/workbooks/{id}/workplaces/{wpId}/move-up(id=${workbook.id},wpId=${wp.id})}" method="post">
                                     <button type="submit" class="btn btn-icon" title="Monter"
-                                            th:disabled="${wp.rank == 1}">Up</button>
+                                            th:disabled="${wp.rank == 1}">&#8593;</button>
                                 </form>
                                 <form th:action="@{/workbooks/{id}/workplaces/{wpId}/move-down(id=${workbook.id},wpId=${wp.id})}" method="post">
                                     <button type="submit" class="btn btn-icon" title="Descendre"
-                                            th:disabled="${wp.rank == workplaces.size()}">Down</button>
+                                            th:disabled="${wp.rank == totalElements}">&#8595;</button>
                                 </form>
                                 <a th:href="@{/workbooks/{id}/workplaces/{wpId}/edit(id=${workbook.id},wpId=${wp.id})}"
-                                   class="btn btn-sm btn-secondary">Update</a>
+                                   class="btn btn-sm btn-secondary">Modifier</a>
                                 <form th:action="@{/workbooks/{id}/workplaces/{wpId}/delete(id=${workbook.id},wpId=${wp.id})}"
-                                      method="post" onsubmit="return confirm('Delete the workplace ?')">
-                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                      method="post"
+                                      style="display:inline"
+                                      onsubmit="return confirm('Voulez-vous vraiment supprimer ce workplace ?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
                                 </form>
                             </div>
                         </div>
                     </div>
+
+                    <!-- PAGINATION -->
+                    <div th:if="${totalPages > 1}" class="pagination">
+                        <a th:if="${currentPage > 0}"
+                           th:href="@{/workbooks/{id}(id=${workbook.id}, page=${currentPage - 1})}"
+                           class="page-btn">&#8592;</a>
+                        <span th:unless="${currentPage > 0}" class="page-btn page-btn-disabled">&#8592;</span>
+
+                        <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                            <a th:if="${i != currentPage}"
+                               th:href="@{/workbooks/{id}(id=${workbook.id}, page=${i})}"
+                               class="page-btn"
+                               th:text="${i + 1}">1</a>
+                            <span th:if="${i == currentPage}"
+                                  class="page-btn page-btn-active"
+                                  th:text="${i + 1}">1</span>
+                        </th:block>
+
+                        <a th:if="${currentPage < totalPages - 1}"
+                           th:href="@{/workbooks/{id}(id=${workbook.id}, page=${currentPage + 1})}"
+                           class="page-btn">&#8594;</a>
+                        <span th:unless="${currentPage < totalPages - 1}" class="page-btn page-btn-disabled">&#8594;</span>
+                    </div>
+
+                    <p th:if="${totalPages > 1}" class="pagination-info">
+                        Page <span th:text="${currentPage + 1}">1</span>
+                        sur <span th:text="${totalPages}">1</span>
+                        &mdash; <span th:text="${totalElements}">0</span> workplaces au total
+                    </p>
                 </section>
 
                 <section class="section">
                     <div class="section-header">
                         <div>
                             <p class="eyebrow">Saisie</p>
-                            <h2>Add workplace</h2>
+                            <h2>Ajouter un workplace</h2>
                         </div>
                     </div>
 
@@ -135,15 +166,15 @@
 
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="companyCode">Company code <span class="required">*</span></label>
+                                    <label for="companyCode">Code entreprise <span class="required">*</span></label>
                                     <input type="text" id="companyCode" th:field="*{companyCode}"
                                            class="form-control" th:classappend="${#fields.hasErrors('companyCode')} ? 'is-invalid'"
-                                           placeholder="Ex: ACME">
+                                           placeholder="Ex : ACME">
                                     <div class="invalid-feedback" th:if="${#fields.hasErrors('companyCode')}" th:errors="*{companyCode}"></div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="companyName">Company name <span class="required">*</span></label>
+                                    <label for="companyName">Nom de l'entreprise <span class="required">*</span></label>
                                     <input type="text" id="companyName" th:field="*{companyName}"
                                            class="form-control" th:classappend="${#fields.hasErrors('companyName')} ? 'is-invalid'"
                                            placeholder="Nom complet">
@@ -151,43 +182,45 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="countryCode">Country code <span class="required">*</span></label>
+                                    <label for="countryCode">Code pays <span class="required">*</span></label>
                                     <input type="text" id="countryCode" th:field="*{countryCode}"
                                            class="form-control" th:classappend="${#fields.hasErrors('countryCode')} ? 'is-invalid'"
-                                           placeholder="Ex: FR">
+                                           placeholder="Ex : FR">
                                     <div class="invalid-feedback" th:if="${#fields.hasErrors('countryCode')}" th:errors="*{countryCode}"></div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="countryName">Country name <span class="required">*</span></label>
+                                    <label for="countryName">Nom du pays <span class="required">*</span></label>
                                     <input type="text" id="countryName" th:field="*{countryName}"
                                            class="form-control" th:classappend="${#fields.hasErrors('countryName')} ? 'is-invalid'"
-                                           placeholder="Ex: France">
+                                           placeholder="Ex : France">
                                     <div class="invalid-feedback" th:if="${#fields.hasErrors('countryName')}" th:errors="*{countryName}"></div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="startDate">Start date <span class="required">*</span></label>
+                                    <label for="startDate">Date de debut <span class="required">*</span></label>
                                     <input type="date" id="startDate" th:field="*{startDate}"
                                            class="form-control" th:classappend="${#fields.hasErrors('startDate')} ? 'is-invalid'">
                                     <div class="invalid-feedback" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="endDate">End date</label>
+                                    <label for="endDate">Date de fin</label>
                                     <input type="date" id="endDate" th:field="*{endDate}" class="form-control">
+                                    <div class="form-hint">Laisser vide si poste en cours</div>
                                 </div>
 
                                 <div class="form-group form-group-full">
                                     <label class="checkbox-label">
                                         <input type="checkbox" th:field="*{current}">
-                                        <span>Workplace current</span>
+                                        <span>Poste actuel</span>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="form-actions">
-                                <button type="submit" class="btn btn-primary">Save workplace</button>
+                                <a th:href="@{/workbooks/{id}(id=${workbook.id})}" class="btn btn-outline">Annuler</a>
+                                <button type="submit" class="btn btn-primary">Enregistrer</button>
                             </div>
                         </form>
                     </div>

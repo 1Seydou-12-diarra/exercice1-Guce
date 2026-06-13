@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Controller
 @RequestMapping("/workbooks")
@@ -65,13 +67,22 @@ public class WorkBookController {
         }
     }
 
-    // DETAIL
+    // DETAIL avec pagination (20 workplaces par page)
     @GetMapping("/{id}")
-    public String detail(@PathVariable Long id, Model model) {
+    public String detail(@PathVariable Long id,
+                         @RequestParam(defaultValue = "0") int page,
+                         Model model) {
         WorkbookDto workbook = workbookService.findById(id);
+        Page<WorkplaceDto> workplacePage = workplaceService.findByWorkbookIdPaginated(
+                id, PageRequest.of(page, 20));
+
         model.addAttribute("workbook", workbook);
         model.addAttribute("newWorkplace", new WorkplaceDto());
-        model.addAttribute("workplaces", workplaceService.findByWorkbookId(id));
+        model.addAttribute("workplacePage", workplacePage);
+        model.addAttribute("workplaces", workplacePage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", workplacePage.getTotalPages());
+        model.addAttribute("totalElements", workplacePage.getTotalElements());
         return "workbook/detail";
     }
 
