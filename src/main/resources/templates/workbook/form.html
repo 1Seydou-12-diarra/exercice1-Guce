@@ -12,10 +12,7 @@
         <main class="guce-main">
 
             <section class="guce-content-bar">
-                <div>
-                    <p class="eyebrow" th:text="${workbook.id != null ? 'Modification du dossier' : 'Nouveau dossier'}">Dossier</p>
-                    <h1 th:text="${pageTitle}">Workbook</h1>
-                </div>
+
                 <a th:href="${workbook.id != null ? '/workbooks/' + workbook.id : '/workbooks'}"
                    class="btn btn-outline">← Retour</a>
             </section>
@@ -90,7 +87,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="passportNumber">Numéro de passeport <span class="required">*</span></label>
+                                    <label for="passportNumber">N° passeport <span class="required">*</span></label>
                                     <input type="text" id="passportNumber" th:field="*{passportNumber}"
                                            class="form-control"
                                            th:classappend="${#fields.hasErrors('passportNumber')} ? 'is-invalid'"
@@ -155,13 +152,12 @@
                                 <thead>
                                 <tr>
                                     <th>Rang</th>
-                                    <th>Statut</th>
                                     <th>Code entreprise</th>
-                                    <th>Entreprise</th>
+                                    <th>Nom Entreprise</th>
                                     <th>Code pays</th>
-                                    <th>Pays</th>
-                                    <th>Début</th>
-                                    <th>Fin</th>
+                                    <th>Nom Pays</th>
+                                    <th>Date Début</th>
+                                    <th>Date Fin</th>
                                     <th class="actions-col">Actions</th>
                                 </tr>
                                 </thead>

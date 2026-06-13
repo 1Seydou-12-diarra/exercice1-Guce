@@ -32,7 +32,7 @@
                     <div class="empty-icon">WM</div>
                     <h3>Aucun workbook</h3>
                     <p>Commencez par creer un nouveau workbook.</p>
-                    <a th:href="@{/workbooks/new}" class="btn btn-primary">+ Create the Workbook</a>
+                    <a th:href="@{/workbooks/new}" class="btn btn-primary">+ Creer un workbook</a>
                 </div>
 
                 <div th:unless="${workbooks.isEmpty()}" class="card table-card">
@@ -40,11 +40,11 @@
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>N</th>
-                                    <th>Full name</th>
+                                    <th>N°</th>
+                                    <th>Nom & Prénom </th>
                                     <th>Age</th>
                                     <th>Email</th>
-                                    <th>Passport number</th>
+                                    <th>N° Passport</th>
                                     <th>Workplaces</th>
                                     <th>Actions</th>
                                 </tr>
@@ -62,14 +62,14 @@
                                     <td class="mono" th:text="${wb.passportNumber}">AB123456</td>
                                     <td>
                                         <span class="badge"
-                                              th:text="${wb.workplaces.size()} + ' poste(s)'">0 poste(s)</span>
+                                              th:text="${wb.workplaces.size()} + ' poste(s)'">0 workplace(s)</span>
                                     </td>
                                     <td class="actions">
-                                        <a th:href="@{/workbooks/{id}(id=${wb.id})}" class="btn btn-sm btn-outline">View</a>
-                                        <a th:href="@{/workbooks/{id}/edit(id=${wb.id})}" class="btn btn-sm btn-secondary">Update</a>
+                                        <a th:href="@{/workbooks/{id}(id=${wb.id})}" class="btn btn-sm btn-outline">detail</a>
+                                        <a th:href="@{/workbooks/{id}/edit(id=${wb.id})}" class="btn btn-sm btn-secondary">modifier</a>
                                         <form th:action="@{/workbooks/{id}/delete(id=${wb.id})}" method="post"
                                               onsubmit="return confirm('Supprimer ce workbook ?')">
-                                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                            <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
                                         </form>
                                     </td>
                                 </tr>
