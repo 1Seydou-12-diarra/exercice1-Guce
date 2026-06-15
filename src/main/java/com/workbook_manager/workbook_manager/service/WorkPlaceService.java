@@ -13,9 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+/**
+ * Service metier gerant les operations sur les Workplaces.
+ * Un Workplace est toujours rattache a un Workbook parent.
+ * La gestion du rang garantit que les postes sont toujours
+ * consecutifs et commencent a 1.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -25,8 +30,10 @@ public class WorkPlaceService {
     private final WorkBookRepository workbookRepository;
     private final EntityManager entityManager;
 
-    // Retourne tous les postes d'un workbook, triés par rang croissant
-
+    /**
+     * Retourne tous les postes d'un workbook tries par rang croissant.
+     * Utilise pour les listes sans pagination.
+     */
     public List<WorkplaceDto> findByWorkbookId(Long workbookId) {
         return workplaceRepository.findByWorkbookIdOrderByRankAsc(workbookId)
                 .stream()
@@ -34,55 +41,69 @@ public class WorkPlaceService {
                 .toList();
     }
 
-
-    // Retourne les postes d'un workbook avec pagination
+    /**
+     * Retourne les postes d'un workbook avec pagination, tries par rang croissant.
+     * Utilise pour la page de detail (20 postes par page).
+     */
     public Page<WorkplaceDto> findByWorkbookIdPaginated(Long workbookId, Pageable pageable) {
         Page<Workplace> page = workplaceRepository.findByWorkbookIdOrderByRankAsc(workbookId, pageable);
         return page.map(this::toDto);
     }
 
-    // Retourne un poste par son identifiant
-
+    /**
+     * Retourne un workplace par son identifiant.
+     * Leve une exception si le workplace est introuvable.
+     */
     public WorkplaceDto findById(Long id) {
         return toDto(findEntityById(id));
     }
 
-    // Ajoute un nouveau poste en tête de liste (rang 1) et décale les autres vers le bas
+    /**
+     * Ajoute un nouveau poste en tete de liste (rang 1).
+     * Tous les postes existants sont decales d'un rang vers le bas.
+     * Si le nouveau poste est marque "actuel", le flag est retire des autres postes.
+     */
     public WorkplaceDto addWorkplace(Long workbookId, WorkplaceDto workplaceDto) {
         Workbook workbook = workbookRepository.findById(workbookId)
                 .orElseThrow(() -> new EntityNotFoundException("Workbook introuvable avec l'id : " + workbookId));
 
         Workplace workplace = toEntity(workplaceDto);
-        workplace.setId(null);
+        workplace.setId(null); // Force la creation d'un nouvel enregistrement
 
-        // Si ce poste est marqué comme actuel, on retire le flag des autres postes
+        // Si ce poste est actuel, on retire le flag des autres postes du workbook
         if (workplace.isCurrent()) {
             clearCurrentFlag(workbookId);
         }
 
-        // Décale tous les rangs existants de +1 pour libérer la place au rang 1
+        // Decalage de tous les rangs existants de +1 pour liberer la position 1
         workplaceRepository.incrementRanksFrom(workbookId, 1);
 
+        // Flush et clear necessaires pour eviter les conflits de rang en base
         entityManager.flush();
         entityManager.clear();
 
         workplace.setWorkbook(workbook);
-        workplace.setRank(1);
+        workplace.setRank(1); // Le nouveau poste prend la premiere position
         return toDto(workplaceRepository.save(workplace));
     }
 
-    // Met à jour les informations d'un poste existant
+    /**
+     * Met a jour les informations d'un poste existant.
+     * Si le poste devient "actuel", le flag est retire des autres postes du meme workbook.
+     */
     public WorkplaceDto updateWorkplace(Long workplaceId, WorkplaceDto updated) {
         Workplace existing = findEntityById(workplaceId);
 
-        // Si le poste devient "actuel", on retire le flag des autres postes d'abord
+        // Gestion du flag "actuel" : un seul poste peut etre actuel par workbook
         if (updated.isCurrent() && !existing.isCurrent()) {
             clearCurrentFlag(existing.getWorkbook().getId());
+            // Flush et refresh necessaires apres la mise a jour du flag
             entityManager.flush();
             entityManager.clear();
             existing = findEntityById(workplaceId);
         }
 
+        // Mise a jour des champs du poste
         existing.setCurrent(updated.isCurrent());
         existing.setCompanyCode(updated.getCompanyCode());
         existing.setCompanyName(updated.getCompanyName());
@@ -94,7 +115,10 @@ public class WorkPlaceService {
         return toDto(workplaceRepository.save(existing));
     }
 
-    // Supprime un poste et réajuste les rangs des postes suivants
+    /**
+     * Supprime un poste et reajuste les rangs des postes suivants.
+     * Les rangs restent consecutifs apres la suppression (pas de trou).
+     */
     public void deleteWorkplace(Long workplaceId) {
         Workplace workplace = findEntityById(workplaceId);
         Long workbookId = workplace.getWorkbook().getId();
@@ -103,21 +127,26 @@ public class WorkPlaceService {
         workplaceRepository.delete(workplace);
         entityManager.flush();
 
+        // Decrement des rangs de tous les postes situes apres le poste supprime
         workplaceRepository.decrementRanksAfter(workbookId, deletedRank);
     }
 
-    // Remonte un poste d'une position dans la liste (échange avec le poste au-dessus)
+    /**
+     * Remonte un poste d'une position dans la liste.
+     * Echange les rangs avec le poste immediatement au-dessus.
+     * Sans effet si le poste est deja en premiere position.
+     */
     public void moveUp(Long workplaceId) {
         Workplace workplace = findEntityById(workplaceId);
 
-        // Déjà en première position, rien à faire
+        // Deja en premiere position, rien a faire
         if (workplace.getRank() <= 1) return;
 
         Long workbookId = workplace.getWorkbook().getId();
         int currentRank = workplace.getRank();
         int targetRank = currentRank - 1;
 
-        // On passe le voisin du dessus à -1 temporairement pour éviter un conflit d'unicité
+        // Passage temporaire du voisin a -1 pour eviter un conflit de contrainte d'unicite
         workplaceRepository.findByWorkbookIdAndRank(workbookId, targetRank)
                 .ifPresent(other -> {
                     other.setRank(-1);
@@ -127,7 +156,7 @@ public class WorkPlaceService {
         workplace.setRank(targetRank);
         workplaceRepository.saveAndFlush(workplace);
 
-        // On assigne l'ancien rang au voisin déplacé temporairement
+        // Assignation du rang libere au voisin precedemment deplace a -1
         workplaceRepository.findByWorkbookIdAndRank(workbookId, -1)
                 .ifPresent(other -> {
                     other.setRank(currentRank);
@@ -135,7 +164,11 @@ public class WorkPlaceService {
                 });
     }
 
-    // Descend un poste d'une position dans la liste (échange avec le poste en-dessous)
+    /**
+     * Descend un poste d'une position dans la liste.
+     * Echange les rangs avec le poste immediatement en-dessous.
+     * Sans effet si le poste est deja en derniere position.
+     */
     public void moveDown(Long workplaceId) {
         Workplace workplace = findEntityById(workplaceId);
         Long workbookId = workplace.getWorkbook().getId();
@@ -143,12 +176,12 @@ public class WorkPlaceService {
 
         int maxRank = workplaceRepository.findMaxRankByWorkbookId(workbookId).orElse(1);
 
-        // Déjà en dernière position, rien à faire
+        // Deja en derniere position, rien a faire
         if (currentRank >= maxRank) return;
 
         int targetRank = currentRank + 1;
 
-        // Même logique que moveUp : passage temporaire à -1 pour éviter le conflit
+        // Meme logique que moveUp : passage temporaire a -1 pour eviter le conflit
         workplaceRepository.findByWorkbookIdAndRank(workbookId, targetRank)
                 .ifPresent(other -> {
                     other.setRank(-1);
@@ -165,13 +198,18 @@ public class WorkPlaceService {
                 });
     }
 
-    // Recherche un poste en base, lève une exception s'il est absent
+    /**
+     * Recherche un workplace en base par son identifiant.
+     * Leve EntityNotFoundException s'il est absent.
+     */
     private Workplace findEntityById(Long id) {
         return workplaceRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Workplace introuvable avec l'id : " + id));
     }
 
-    // Convertit un DTO en entité Workplace
+    /**
+     * Convertit un WorkplaceDto en entite Workplace.
+     */
     private Workplace toEntity(WorkplaceDto dto) {
         Workplace workplace = new Workplace();
         workplace.setId(dto.getId());
@@ -186,7 +224,10 @@ public class WorkPlaceService {
         return workplace;
     }
 
-    // Convertit une entité Workplace en DTO
+    /**
+     * Convertit une entite Workplace en WorkplaceDto.
+     * L'identifiant du workbook parent est inclus dans le DTO.
+     */
     private WorkplaceDto toDto(Workplace workplace) {
         WorkplaceDto dto = new WorkplaceDto();
         dto.setId(workplace.getId());
@@ -202,7 +243,10 @@ public class WorkPlaceService {
         return dto;
     }
 
-    // Retire le flag "poste actuel" de tous les postes d'un workbook
+    /**
+     * Retire le flag "poste actuel" de tous les postes d'un workbook.
+     * Appele avant de marquer un nouveau poste comme actuel.
+     */
     private void clearCurrentFlag(Long workbookId) {
         workplaceRepository.clearCurrentFlagByWorkbookId(workbookId);
     }

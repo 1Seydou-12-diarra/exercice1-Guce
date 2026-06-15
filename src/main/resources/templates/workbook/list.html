@@ -12,10 +12,11 @@
         <main class="guce-main">
             <section class="guce-content-bar">
                 <div>
+                    <p class="eyebrow">Gestion des dossiers</p>
                     <h1>Workbooks</h1>
                     <p class="page-subtitle">Suivi des workbooks et de leurs workplaces.</p>
                 </div>
-                <a th:href="@{/workbooks/new}" class="btn btn-primary">+ Ajouter</a>
+                <a th:href="@{/workbooks/new}" class="btn btn-primary">+ New Workbook</a>
             </section>
 
             <div class="main-content">
@@ -24,7 +25,7 @@
 
                 <div class="page-header">
                     <h2>Liste des workbooks</h2>
-                    <span class="badge" th:text="${workbooks.size()} + ' entry(ies)'"></span>
+                    <span class="badge" th:text="${totalElements} + ' entry(ies)'"></span>
                 </div>
 
                 <div th:if="${workbooks.isEmpty()}" class="empty-state">
@@ -44,7 +45,6 @@
                                 <th style="width:80px">Age</th>
                                 <th>Email</th>
                                 <th style="width:120px">N° Passport</th>
-                                <th style="width:110px">Workplaces</th>
                                 <th style="width:200px;text-align:center">Actions</th>
                             </tr>
                             </thead>
@@ -54,15 +54,11 @@
                                 <td>
                                     <a th:href="@{/workbooks/{id}(id=${wb.id})}"
                                        class="link-name"
-                                       th:text="${wb.fullName}">Nom & Prénom</a>
+                                       th:text="${wb.fullName}">fullName</a>
                                 </td>
                                 <td th:text="${wb.age != null ? wb.age + ' ans' : '-'}">30 ans</td>
                                 <td th:text="${wb.email}">email@example.com</td>
                                 <td class="mono" th:text="${wb.passportNumber}">AB123456</td>
-                                <td>
-                                        <span class="badge"
-                                              th:text="${wb.workplaces.size()} ">0 wokplaces(s)</span>
-                                </td>
                                 <td style="text-align:center">
                                     <div class="row-actions" style="justify-content:center">
                                         <a th:href="@{/workbooks/{id}(id=${wb.id})}"
@@ -82,6 +78,40 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Pagination : affichee seulement si plus d'une page -->
+                <div th:if="${totalPages > 1}" class="pagination" style="margin-top:1.25rem">
+                    <!-- Bouton precedent -->
+                    <a th:if="${currentPage > 0}"
+                       th:href="@{/workbooks(page=${currentPage - 1})}"
+                       class="page-btn">&#8592;</a>
+                    <span th:unless="${currentPage > 0}" class="page-btn page-btn-disabled">&#8592;</span>
+
+                    <!-- Numeros de pages -->
+                    <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                        <a th:if="${i != currentPage}"
+                           th:href="@{/workbooks(page=${i})}"
+                           class="page-btn"
+                           th:text="${i + 1}">1</a>
+                        <span th:if="${i == currentPage}"
+                              class="page-btn page-btn-active"
+                              th:text="${i + 1}">1</span>
+                    </th:block>
+
+                    <!-- Bouton suivant -->
+                    <a th:if="${currentPage < totalPages - 1}"
+                       th:href="@{/workbooks(page=${currentPage + 1})}"
+                       class="page-btn">&#8594;</a>
+                    <span th:unless="${currentPage < totalPages - 1}" class="page-btn page-btn-disabled">&#8594;</span>
+                </div>
+
+                <!-- Info pagination -->
+                <p th:if="${totalPages > 1}" class="pagination-info">
+                    Page <span th:text="${currentPage + 1}">1</span>
+                    sur <span th:text="${totalPages}">1</span>
+                    &mdash; <span th:text="${totalElements}">0</span> workbooks au total
+                </p>
+
             </div>
         </main>
     </div>

@@ -1213,3 +1213,22 @@ body.modal-open {
 .row-actions form {
   display: inline;
 }
+
+/* Ligne active dans le tableau de detail */
+.row-current {
+  background: var(--current-lt);
+  border-left: 3px solid var(--current);
+}
+
+.row-current:hover {
+  background: #d4edf5;
+}
+
+/* Champ en lecture seule (workbook parent dans le formulaire workplace) */
+.form-control:disabled,
+.form-control[readonly] {
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border);
+}

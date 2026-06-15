@@ -26,6 +26,7 @@
                 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
                 <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
 
+                <!-- Carte d'identite du workbook -->
                 <div class="profile-header card">
                     <div class="profile-avatar"
                          th:text="${workbook.firstName.substring(0,1).toUpperCase() + workbook.lastName.substring(0,1).toUpperCase()}">AB</div>
@@ -58,6 +59,7 @@
                     </div>
                 </div>
 
+                <!-- Section historique des workplaces en tableau -->
                 <section class="section">
                     <div class="section-header">
                         <div>
@@ -66,91 +68,105 @@
                         </div>
                     </div>
 
+                    <!-- Etat vide -->
                     <div th:if="${workplaces.isEmpty()}" class="empty-state-small">
                         <p>Aucun workplace enregistre.</p>
                     </div>
 
-                    <div th:unless="${workplaces.isEmpty()}" class="workplaces-list">
-                        <div th:each="wp : ${workplaces}"
-                             class="workplace-card"
-                             th:classappend="${wp.current} ? 'workplace-current'">
-
-                            <div class="wp-rank-badge" th:text="${wp.rank}">1</div>
-
-                            <div class="wp-body">
-                                <div class="wp-header">
-                                    <div class="wp-title">
-                                        <strong th:text="${wp.companyName}">Nom de Compagnie</strong>
-                                        <span class="wp-code muted" th:text="'(' + ${wp.companyCode} + ')'"></span>
-                                        <span th:if="${wp.current}" class="tag tag-current">Actuel</span>
-                                    </div>
-                                    <div class="wp-period muted">
-                                        <span th:text="${#temporals.format(wp.startDate, 'MM/yyyy')}">01/2020</span>
-                                        <span> - </span>
+                    <!-- Tableau des workplaces -->
+                    <div th:unless="${workplaces.isEmpty()}" class="card table-card">
+                        <div class="table-responsive">
+                            <table class="table" style="min-width:900px">
+                                <thead>
+                                <tr>
+                                    <th style="width:55px">Rang</th>
+                                    <th>Entreprise</th>
+                                    <th style="width:110px">Code</th>
+                                    <th>Pays</th>
+                                    <th style="width:110px">Debut</th>
+                                    <th style="width:110px">Fin</th>
+                                    <th style="width:180px;text-align:center">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="wp : ${workplaces}"
+                                    th:classappend="${wp.current} ? 'row-current'">
+                                    <td class="mono muted" th:text="${wp.rank}">1</td>
+                                    <td>
+                                        <strong th:text="${wp.companyName}">Entreprise</strong>
+                                    </td>
+                                    <td class="mono" th:text="${wp.companyCode}">CODE</td>
+                                    <td>
+                                        <span th:text="${wp.countryName}">Pays</span>
+                                        <span class="muted mono" th:text="'(' + ${wp.countryCode} + ')'"></span>
+                                    </td>
+                                    <td class="mono" th:text="${#temporals.format(wp.startDate, 'MM/yyyy')}">01/2020</td>
+                                    <td class="mono">
                                         <span th:if="${wp.endDate != null}" th:text="${#temporals.format(wp.endDate, 'MM/yyyy')}">12/2022</span>
-                                        <span th:unless="${wp.endDate != null}">Present</span>
-                                    </div>
-                                </div>
-                                <div class="wp-meta">
-                                    <span>
-                                        Pays :
-                                        <span th:text="${wp.countryName}">Nom du pays</span>
-                                        <span class="muted" th:text="'(' + ${wp.countryCode} + ')'"></span>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="wp-actions">
-                                <form th:action="@{/workbooks/{id}/workplaces/{wpId}/move-up(id=${workbook.id},wpId=${wp.id})}" method="post">
-                                    <button type="submit" class="btn btn-icon" title="Monter"
-                                            th:disabled="${wp.rank == 1}">&#8593;</button>
-                                </form>
-                                <form th:action="@{/workbooks/{id}/workplaces/{wpId}/move-down(id=${workbook.id},wpId=${wp.id})}" method="post">
-                                    <button type="submit" class="btn btn-icon" title="Descendre"
-                                            th:disabled="${wp.rank == totalElements}">&#8595;</button>
-                                </form>
-                                <a th:href="@{/workbooks/{id}/workplaces/{wpId}/edit(id=${workbook.id},wpId=${wp.id})}"
-                                   class="btn btn-sm btn-secondary">Modifier</a>
-                                <form th:action="@{/workbooks/{id}/workplaces/{wpId}/delete(id=${workbook.id},wpId=${wp.id})}"
-                                      method="post"
-                                      style="display:inline"
-                                      onsubmit="return confirm('Voulez-vous vraiment supprimer ce workplace ?')">
-                                    <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
-                                </form>
-                            </div>
+                                    </td>
+                                    <td>
+                                        <div class="row-actions" style="justify-content:center">
+                                            <!-- Monter d'une position -->
+                                            <form th:action="@{/workbooks/{id}/workplaces/{wpId}/move-up(id=${workbook.id},wpId=${wp.id})}" method="post">
+                                                <button type="submit" class="btn btn-sm btn-icon" title="Monter"
+                                                        th:disabled="${wp.rank == 1}">&#8593;</button>
+                                            </form>
+                                            <!-- Descendre d'une position -->
+                                            <form th:action="@{/workbooks/{id}/workplaces/{wpId}/move-down(id=${workbook.id},wpId=${wp.id})}" method="post">
+                                                <button type="submit" class="btn btn-sm btn-icon" title="Descendre"
+                                                        th:disabled="${wp.rank == totalElements}">&#8595;</button>
+                                            </form>
+                                            <a th:href="@{/workbooks/{id}/workplaces/{wpId}/edit(id=${workbook.id},wpId=${wp.id})}"
+                                               class="btn btn-sm btn-secondary">Modifier</a>
+                                            <form th:action="@{/workbooks/{id}/workplaces/{wpId}/delete(id=${workbook.id},wpId=${wp.id})}"
+                                                  method="post"
+                                                  style="display:inline"
+                                                  onsubmit="return confirm('Voulez-vous vraiment supprimer ce workplace ?')">
+                                                <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
+
+                        <!-- Pagination : affichee seulement si plus d'une page -->
+                        <div th:if="${totalPages > 1}" class="pagination" style="padding:1rem 1.5rem">
+                            <!-- Bouton precedent -->
+                            <a th:if="${currentPage > 0}"
+                               th:href="@{/workbooks/{id}(id=${workbook.id}, page=${currentPage - 1})}"
+                               class="page-btn">&#8592;</a>
+                            <span th:unless="${currentPage > 0}" class="page-btn page-btn-disabled">&#8592;</span>
+
+                            <!-- Numeros de pages -->
+                            <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                                <a th:if="${i != currentPage}"
+                                   th:href="@{/workbooks/{id}(id=${workbook.id}, page=${i})}"
+                                   class="page-btn"
+                                   th:text="${i + 1}">1</a>
+                                <span th:if="${i == currentPage}"
+                                      class="page-btn page-btn-active"
+                                      th:text="${i + 1}">1</span>
+                            </th:block>
+
+                            <!-- Bouton suivant -->
+                            <a th:if="${currentPage < totalPages - 1}"
+                               th:href="@{/workbooks/{id}(id=${workbook.id}, page=${currentPage + 1})}"
+                               class="page-btn">&#8594;</a>
+                            <span th:unless="${currentPage < totalPages - 1}" class="page-btn page-btn-disabled">&#8594;</span>
+                        </div>
+
+                        <!-- Informations de pagination -->
+                        <p th:if="${totalPages > 1}" class="pagination-info" style="padding:0 1.5rem 1rem">
+                            Page <span th:text="${currentPage + 1}">1</span>
+                            sur <span th:text="${totalPages}">1</span>
+                            &mdash; <span th:text="${totalElements}">0</span> workplaces au total
+                        </p>
                     </div>
-
-                    <!-- PAGINATION -->
-                    <div th:if="${totalPages > 1}" class="pagination">
-                        <a th:if="${currentPage > 0}"
-                           th:href="@{/workbooks/{id}(id=${workbook.id}, page=${currentPage - 1})}"
-                           class="page-btn">&#8592;</a>
-                        <span th:unless="${currentPage > 0}" class="page-btn page-btn-disabled">&#8592;</span>
-
-                        <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
-                            <a th:if="${i != currentPage}"
-                               th:href="@{/workbooks/{id}(id=${workbook.id}, page=${i})}"
-                               class="page-btn"
-                               th:text="${i + 1}">1</a>
-                            <span th:if="${i == currentPage}"
-                                  class="page-btn page-btn-active"
-                                  th:text="${i + 1}">1</span>
-                        </th:block>
-
-                        <a th:if="${currentPage < totalPages - 1}"
-                           th:href="@{/workbooks/{id}(id=${workbook.id}, page=${currentPage + 1})}"
-                           class="page-btn">&#8594;</a>
-                        <span th:unless="${currentPage < totalPages - 1}" class="page-btn page-btn-disabled">&#8594;</span>
-                    </div>
-
-                    <p th:if="${totalPages > 1}" class="pagination-info">
-                        Page <span th:text="${currentPage + 1}">1</span>
-                        sur <span th:text="${totalPages}">1</span>
-                        &mdash; <span th:text="${totalElements}">0</span> workplaces au total
-                    </p>
                 </section>
 
+                <!-- Formulaire d'ajout d'un nouveau workplace -->
                 <section class="section">
                     <div class="section-header">
                         <div>
@@ -165,6 +181,15 @@
                               method="post">
 
                             <div class="form-grid">
+
+                                <!-- Workbook parent : affiche en lecture seule, non modifiable -->
+                                <div class="form-group form-group-full">
+                                    <label>Workbook</label>
+                                    <input type="text" class="form-control"
+                                           th:value="${workbook.fullName}"
+                                           readonly disabled>
+                                </div>
+
                                 <div class="form-group">
                                     <label for="companyCode">Code entreprise <span class="required">*</span></label>
                                     <input type="text" id="companyCode" th:field="*{companyCode}"
@@ -207,7 +232,6 @@
                                 <div class="form-group">
                                     <label for="endDate">Date de fin</label>
                                     <input type="date" id="endDate" th:field="*{endDate}" class="form-control">
-                                    <div class="form-hint">Laisser vide si poste en cours</div>
                                 </div>
 
                                 <div class="form-group form-group-full">

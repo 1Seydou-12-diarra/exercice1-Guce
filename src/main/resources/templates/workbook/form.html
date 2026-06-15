@@ -13,24 +13,30 @@
 
             <section class="guce-content-bar">
                 <div>
+                    <!-- Titre dynamique selon le mode : creation ou modification -->
+                    <p class="eyebrow" th:text="${workbook.id != null ? 'Modification du workbook' : 'Nouveau workbook'}">workbook</p>
                     <h1 th:text="${pageTitle}">Workbook</h1>
                 </div>
+                <!-- Bouton retour : vers le detail si modification, vers la liste si creation -->
                 <a th:href="${workbook.id != null ? '/workbooks/' + workbook.id : '/workbooks'}"
                    class="btn btn-outline">← Retour</a>
             </section>
 
             <div class="main-content">
 
+                <!-- Message d'erreur metier (passeport ou email deja utilise) -->
                 <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
 
-                <!-- TABS NAV -->
+                <!-- Navigation par onglets : Workbook (informations) et Workplaces (postes) -->
                 <div class="form-tabs" role="tablist">
+                    <!-- Onglet 1 : actif par defaut -->
                     <button type="button" class="form-tab is-active"
                             role="tab" aria-selected="true" aria-controls="tab-workbook"
                             data-tab="tab-workbook">
                         <span class="tab-num">01</span>
                         <span>Workbook</span>
                     </button>
+                    <!-- Onglet 2 : affiche le nombre de workplaces saisis -->
                     <button type="button" class="form-tab"
                             role="tab" aria-selected="false" aria-controls="tab-workplaces"
                             data-tab="tab-workplaces">
@@ -39,15 +45,15 @@
                         <span class="tab-badge" id="wp-tab-badge">0</span>
                     </button>
                 </div>
-                <!-- ═══════════════════════════════════════════════
-                     ONGLET 1 — WORKBOOK
-                ════════════════════════════════════════════════ -->
+
+                <!-- ============================================
+                     ONGLET 1 : INFORMATIONS DU WORKBOOK
+                     Contient tous les champs de l'entite Workbook.
+                     La soumission envoie aussi les workplaces via
+                     des champs hidden injectes par JavaScript.
+                ============================================ -->
                 <div id="tab-workbook" class="tab-panel is-active" role="tabpanel">
                     <div class="card form-card">
-                        <!--
-                            ACTION UNIQUE : workbook + workplaces soumis ensemble.
-                            Les hidden inputs workplaces[i].xxx sont injectés par JS avant envoi.
-                        -->
                         <form id="workbook-form"
                               th:action="${workbook.id != null ? '/workbooks/' + workbook.id + '/edit' : '/workbooks'}"
                               th:object="${workbook}"
@@ -111,43 +117,47 @@
 
                             </div><!-- /form-grid -->
 
-                            <!-- Conteneur des hidden inputs workplaces — rempli par JS avant submit -->
+                            <!-- Conteneur des champs cachés workplaces, rempli par JS avant envoi du formulaire -->
                             <div id="wp-hidden-container" aria-hidden="true"></div>
 
                             <div class="form-actions">
+                                <!-- Annuler vide la session pour ne pas conserver les workplaces temporaires -->
                                 <a th:href="${workbook.id != null ? '/workbooks/' + workbook.id : '/workbooks'}"
-                                   class="btn btn-outline">Annuler</a>
+                                   class="btn btn-outline"
+                                   onclick="sessionStorage.removeItem('wm_workplaces_session')">Annuler</a>
                                 <button type="submit" id="btn-submit" class="btn btn-primary"
-                                        th:text="${workbook.id != null ? 'Enregistrer' : 'Créer'}">Enregistrer</button>
+                                        th:text="${workbook.id != null ? 'Enregistrer' : 'Créer'}">Créer</button>
                             </div>
 
                         </form>
                     </div>
                 </div><!-- /tab-workbook -->
 
-                <!-- ═══════════════════════════════════════════════
-                     ONGLET 2 — WORKPLACES
-                ════════════════════════════════════════════════ -->
+                <!-- ============================================
+                     ONGLET 2 : LISTE DES WORKPLACES
+                     Les workplaces sont geres en session (sessionStorage)
+                     et ne sont persistes en base qu'a la soumission finale.
+                ============================================ -->
                 <div id="tab-workplaces" class="tab-panel" role="tabpanel">
 
                     <div class="section-header">
                         <h2>Workplaces saisis</h2>
+                        <!-- Bouton d'ouverture de la modale d'ajout -->
                         <button type="button" class="btn btn-primary" id="btn-open-add-modal">
                             + Ajouter
                         </button>
                     </div>
 
-                    <!-- Tableau dynamique — rendu par JS -->
                     <div class="card table-card" id="wp-table-wrapper">
 
-                        <!-- État vide (affiché / masqué par JS) -->
+                        <!-- Etat vide : affiche quand aucun workplace n'est saisi -->
                         <div class="empty-state" id="wp-empty-state">
                             <div class="empty-icon">WP</div>
                             <h3>Aucun workplace</h3>
                             <p>Cliquez sur « + Ajouter » pour saisir un premier poste.</p>
                         </div>
 
-                        <!-- Tableau (affiché / masqué par JS) -->
+                        <!-- Tableau des workplaces : masque par defaut, affiche par JS -->
                         <div class="table-responsive" id="wp-table-container" style="display:none">
                             <table class="table" id="wp-table" style="min-width:900px;table-layout:auto">
                                 <thead>
@@ -157,13 +167,13 @@
                                     <th>Entreprise</th>
                                     <th style="width:90px">Code pays</th>
                                     <th>Pays</th>
-                                    <th style="width:100px">Début</th>
-                                    <th style="width:100px">Fin</th>
+                                    <th style="width:100px"> Date début</th>
+                                    <th style="width:100px"> Date fin</th>
                                     <th style="width:80px;text-align:center">Actions</th>
                                 </tr>
                                 </thead>
                                 <tbody id="wp-tbody">
-                                <!-- Lignes injectées par JS -->
+                                <!-- Les lignes sont injectees dynamiquement par renderTable() -->
                                 </tbody>
                             </table>
                         </div>
@@ -178,9 +188,11 @@
     <footer th:replace="~{workbook/layout :: footer}"></footer>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     MODALE WORKPLACE (ajout + édition)
-══════════════════════════════════════════════════════════ -->
+<!-- ============================================
+     MODALE D'AJOUT ET DE MODIFICATION D'UN WORKPLACE
+     Utilisee pour les deux modes (ajout et edition).
+     Le titre et le bouton de confirmation changent selon le mode.
+============================================ -->
 <div class="modal-backdrop" id="wp-modal" role="dialog" aria-modal="true"
      aria-labelledby="modal-title" hidden>
     <div class="modal-box">
@@ -231,13 +243,13 @@
                 <div class="form-group">
                     <label for="m-endDate">Date de fin</label>
                     <input type="date" id="m-endDate" class="form-control">
-                    <div class="form-hint">Laisser vide si workplace en cours</div>
+                    <div class="form-hint">Laisser vide si poste en cours</div>
                 </div>
 
                 <div class="form-group form-group-full">
                     <label class="checkbox-label">
                         <input type="checkbox" id="m-current">
-                        Workplace actuel
+                        workplace actuel
                     </label>
                     <div class="form-hint">Un seul workplace peut être marqué comme actuel.</div>
                 </div>
@@ -253,25 +265,56 @@
     </div>
 </div>
 
-<!-- Workplaces JSON injected by Thymeleaf -->
+<!-- Div invisible servant a transmettre les workplaces existants depuis le serveur (mode edition).
+     Thymeleaf injecte le JSON dans l'attribut data-json. -->
 <div id="wp-data" th:attr="data-json=${workplacesJson}" style="display:none"></div>
 
 <script>
     (function () {
         'use strict';
 
+        /* ================================================
+           CLE DE STOCKAGE EN SESSION
+           Identifiant unique utilise pour stocker et relire
+           les workplaces dans le sessionStorage du navigateur.
+        ================================================ */
         var SESSION_KEY = 'wm_workplaces_session';
 
+        /* ================================================
+           CHARGEMENT INITIAL DES WORKPLACES
+           Priorite 1 : sessionStorage (survie au rafraichissement)
+           Priorite 2 : donnees injectees par le serveur (mode edition)
+           Priorite 3 : tableau vide (mode creation)
+        ================================================ */
         var stored = sessionStorage.getItem(SESSION_KEY);
         var workplaces = [];
         try {
-            workplaces = stored
-                ? JSON.parse(stored)
-                : JSON.parse(document.getElementById('wp-data').getAttribute('data-json') || '[]');
-        } catch (e) { workplaces = []; }
+            var serverData = JSON.parse(document.getElementById('wp-data').getAttribute('data-json') || '[]');
+            // isEditMode : vrai si le serveur a injecte des workplaces (modification d'un workbook existant)
+            var isEditMode = serverData.length > 0;
 
+            if (isEditMode) {
+                // Mode edition : les donnees du serveur sont toujours prioritaires.
+                // On vide la session pour eviter que d'anciens ajouts s'accumulent.
+                workplaces = serverData;
+                sessionStorage.removeItem(SESSION_KEY);
+            } else if (stored) {
+                // Mode creation avec session existante :
+                // l'utilisateur a deja saisi des workplaces (retour apres erreur ou navigation).
+                workplaces = JSON.parse(stored);
+            }
+            // Sinon : mode creation vierge, workplaces reste un tableau vide.
+        } catch (e) {
+            // En cas de JSON invalide, on repart d'un tableau vide
+            workplaces = [];
+        }
+
+        /* Index du workplace en cours d'edition (-1 = mode ajout) */
         var editingIndex = -1;
 
+        /* ================================================
+           REFERENCES AUX ELEMENTS DU DOM
+        ================================================ */
         var modal          = document.getElementById('wp-modal');
         var modalTitle     = document.getElementById('modal-title');
         var confirmBtn     = document.getElementById('modal-confirm-btn');
@@ -285,6 +328,7 @@
         var hiddenContainer= document.getElementById('wp-hidden-container');
         var form           = document.getElementById('workbook-form');
 
+        /* Champs de saisie de la modale */
         var fCode    = document.getElementById('m-companyCode');
         var fName    = document.getElementById('m-companyName');
         var fCCode   = document.getElementById('m-countryCode');
@@ -293,12 +337,17 @@
         var fEnd     = document.getElementById('m-endDate');
         var fCurrent = document.getElementById('m-current');
 
+        /* Zones d'affichage des messages d'erreur de la modale */
         var errCode  = document.getElementById('err-companyCode');
         var errName  = document.getElementById('err-companyName');
         var errCCode = document.getElementById('err-countryCode');
         var errCName = document.getElementById('err-countryName');
         var errStart = document.getElementById('err-startDate');
 
+        /* ================================================
+           GESTION DES ONGLETS
+           Active l'onglet clique et masque les autres.
+        ================================================ */
         function switchTab(tabId) {
             document.querySelectorAll('.form-tab').forEach(function (t) {
                 var active = t.dataset.tab === tabId;
@@ -310,18 +359,28 @@
             });
         }
 
+        /* Ecoute des clics sur les boutons d'onglet */
         document.querySelectorAll('.form-tab').forEach(function (tab) {
             tab.addEventListener('click', function () { switchTab(tab.dataset.tab); });
         });
 
+        /* ================================================
+           RENDU DU TABLEAU DES WORKPLACES
+           Reconstruit le tableau HTML a partir du tableau JS.
+           Affiche l'etat vide si aucun workplace n'est present.
+        ================================================ */
         function renderTable() {
             tbody.innerHTML = '';
+
             if (workplaces.length === 0) {
+                /* Aucun workplace : afficher le message d'etat vide */
                 emptyState.style.display     = '';
                 tableContainer.style.display = 'none';
             } else {
+                /* Au moins un workplace : afficher le tableau */
                 emptyState.style.display     = 'none';
                 tableContainer.style.display = '';
+
                 workplaces.forEach(function (wp, idx) {
                     var tr = document.createElement('tr');
                     tr.innerHTML =
@@ -332,6 +391,7 @@
                         '<td style="white-space:nowrap">' + esc(wp.countryName) + '</td>' +
                         '<td class="mono" style="white-space:nowrap">' + esc(wp.startDate) + '</td>' +
                         '<td class="mono" style="white-space:nowrap">' + (wp.endDate ? esc(wp.endDate) : '<span class="muted">-</span>') + '</td>' +
+                        /* Boutons d'action : crayon (modifier) et croix (supprimer) */
                         '<td style="text-align:center">' +
                         '<div style="display:inline-flex;gap:.35rem;align-items:center">' +
                         '<button type="button" class="btn btn-sm btn-icon btn-edit" data-idx="' + idx + '" title="Modifier">' +
@@ -349,15 +409,29 @@
                     tbody.appendChild(tr);
                 });
             }
+
+            /* Mise a jour du badge de l'onglet avec le nombre de workplaces */
             tabBadge.textContent   = workplaces.length;
             tabBadge.style.display = workplaces.length > 0 ? '' : 'none';
+
+            /* Sauvegarde de l'etat dans le sessionStorage pour survie au rafraichissement */
             sessionStorage.setItem(SESSION_KEY, JSON.stringify(workplaces));
         }
 
+        /* ================================================
+           REORDONNEMENT DES RANGS
+           Appele apres chaque suppression pour garantir
+           que les rangs sont consecutifs sans trou (1, 2, 3...).
+        ================================================ */
         function reassignRanks() {
             workplaces.forEach(function (wp, i) { wp.rank = i + 1; });
         }
 
+        /* ================================================
+           ECHAPPEMENT HTML
+           Protege contre les injections XSS en echappant
+           les caracteres speciaux avant insertion dans le DOM.
+        ================================================ */
         function esc(str) {
             if (str == null) return '';
             return String(str)
@@ -367,41 +441,61 @@
                 .replace(/"/g, '&quot;');
         }
 
+        /* ================================================
+           OUVERTURE DE LA MODALE
+           Mode ajout (idx undefined) : formulaire vide, rang suivant.
+           Mode edition (idx fourni) : formulaire pre-rempli avec les donnees du workplace.
+        ================================================ */
         function openModal(idx) {
             editingIndex = (idx === undefined) ? -1 : idx;
             clearErrors();
+
             if (editingIndex === -1) {
+                /* Mode ajout : reinitialisation du formulaire */
                 modalTitle.textContent = 'Ajouter un workplace';
                 confirmBtn.textContent = 'Ajouter';
                 fCode.value = ''; fName.value = ''; fCCode.value = '';
                 fCName.value = ''; fStart.value = ''; fEnd.value = '';
                 fCurrent.checked = false;
             } else {
+                /* Mode edition : pre-remplissage avec les donnees existantes */
                 var wp = workplaces[editingIndex];
                 modalTitle.textContent = 'Modifier le workplace';
                 confirmBtn.textContent = 'Enregistrer';
-                fCode.value    = wp.companyCode;
-                fName.value    = wp.companyName;
-                fCCode.value   = wp.countryCode;
-                fCName.value   = wp.countryName;
-                fStart.value   = wp.startDate;
-                fEnd.value     = wp.endDate || '';
+                fCode.value      = wp.companyCode;
+                fName.value      = wp.companyName;
+                fCCode.value     = wp.countryCode;
+                fCName.value     = wp.countryName;
+                fStart.value     = wp.startDate;
+                fEnd.value       = wp.endDate || '';
                 fCurrent.checked = wp.current;
             }
+
             modal.hidden = false;
-            document.body.classList.add('modal-open');
-            fCode.focus();
+            document.body.classList.add('modal-open'); /* Bloque le scroll de la page */
+            fCode.focus(); /* Focus sur le premier champ pour faciliter la saisie */
         }
 
+        /* ================================================
+           FERMETURE DE LA MODALE
+           Reinitialise l'index d'edition et restaure le scroll.
+        ================================================ */
         function closeModal() {
             modal.hidden = true;
             document.body.classList.remove('modal-open');
             editingIndex = -1;
         }
 
+        /* ================================================
+           VALIDATION DU FORMULAIRE DE LA MODALE
+           Verifie que tous les champs obligatoires sont remplis.
+           Affiche les messages d'erreur sous chaque champ invalide.
+           Retourne true si le formulaire est valide, false sinon.
+        ================================================ */
         function validate() {
             clearErrors();
             var ok = true;
+
             function req(input, errEl, msg) {
                 if (!input.value.trim()) {
                     errEl.textContent = msg;
@@ -409,6 +503,7 @@
                     ok = false;
                 }
             }
+
             req(fCode,  errCode,  'Le code entreprise est obligatoire.');
             req(fName,  errName,  "Le nom de l entreprise est obligatoire.");
             req(fCCode, errCCode, 'Le code pays est obligatoire.');
@@ -417,6 +512,7 @@
             return ok;
         }
 
+        /* Efface tous les messages d'erreur et les styles invalides */
         function clearErrors() {
             [fCode, fName, fCCode, fCName, fStart].forEach(function (f) {
                 f.classList.remove('is-invalid');
@@ -426,13 +522,24 @@
             });
         }
 
+        /* ================================================
+           CONFIRMATION (AJOUT OU MODIFICATION)
+           Appele au clic sur "Ajouter" ou "Enregistrer".
+           - Valide le formulaire
+           - Gere le flag "poste actuel" (un seul autorise)
+           - Ajoute ou met a jour le workplace dans le tableau JS
+           - Ferme la modale et bascule sur l'onglet 2
+        ================================================ */
         confirmBtn.addEventListener('click', function () {
             if (!validate()) return;
+
+            /* Si ce poste est marque actuel, on retire le flag des autres postes */
             if (fCurrent.checked) {
                 workplaces.forEach(function (wp, i) {
                     if (i !== editingIndex) wp.current = false;
                 });
             }
+
             var wp = {
                 companyCode : fCode.value.trim(),
                 companyName : fName.value.trim(),
@@ -443,44 +550,74 @@
                 current     : fCurrent.checked,
                 rank        : 0
             };
+
             if (editingIndex === -1) {
+                /* Ajout : le nouveau workplace recoit le rang suivant */
                 wp.rank = workplaces.length + 1;
                 workplaces.push(wp);
             } else {
+                /* Modification : conservation du rang existant */
                 wp.rank = workplaces[editingIndex].rank;
                 workplaces[editingIndex] = wp;
             }
+
             closeModal();
             renderTable();
-            switchTab('tab-workplaces');
+            switchTab('tab-workplaces'); /* Bascule automatiquement sur l'onglet 2 */
         });
 
+        /* ================================================
+           ACTIONS SUR LES LIGNES DU TABLEAU
+           Delegation d'evenement sur le tbody pour gerer
+           les clics sur les boutons modifier et supprimer.
+        ================================================ */
         tbody.addEventListener('click', function (e) {
             var editBtn   = e.target.closest('.btn-edit');
             var deleteBtn = e.target.closest('.btn-delete');
+
             if (editBtn) {
+                /* Ouverture de la modale en mode edition */
                 openModal(parseInt(editBtn.dataset.idx, 10));
                 return;
             }
+
             if (deleteBtn) {
+                /* Demande de confirmation avant suppression */
                 if (!confirm('Voulez-vous vraiment supprimer ce workplace ?')) return;
                 workplaces.splice(parseInt(deleteBtn.dataset.idx, 10), 1);
-                reassignRanks();
+                reassignRanks(); /* Reordonnement des rangs apres suppression */
                 renderTable();
             }
         });
 
+        /* ================================================
+           EVENEMENTS D'OUVERTURE ET FERMETURE DE LA MODALE
+        ================================================ */
         addBtn.addEventListener('click', function () { openModal(); });
         cancelBtn.addEventListener('click', closeModal);
         closeBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+        /* Fermeture en cliquant sur le fond de la modale */
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+
+        /* Fermeture avec la touche Echap */
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && !modal.hidden) closeModal();
         });
 
+        /* ================================================
+           INJECTION DES WORKPLACES AVANT SOUMISSION DU FORMULAIRE
+           Convertit le tableau JS en champs hidden compatibles
+           avec le binding Spring MVC (workplaces[i].champ).
+           La session est videe apres envoi.
+        ================================================ */
         form.addEventListener('submit', function () {
             hiddenContainer.innerHTML = '';
+
             workplaces.forEach(function (wp, i) {
+                /* Cree un champ hidden pour chaque propriete du workplace */
                 function h(name, val) {
                     var inp   = document.createElement('input');
                     inp.type  = 'hidden';
@@ -497,9 +634,16 @@
                 h('current',     wp.current ? 'true' : 'false');
                 h('rank',        wp.rank);
             });
+
+            /* Suppression de la session : les donnees sont desormais en base */
             sessionStorage.removeItem(SESSION_KEY);
         });
 
+        /* ================================================
+           RENDU INITIAL
+           Affiche les workplaces deja presents au chargement
+           de la page (mode edition ou retour apres erreur).
+        ================================================ */
         renderTable();
 
     })();
